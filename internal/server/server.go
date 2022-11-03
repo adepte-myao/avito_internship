@@ -89,5 +89,5 @@ func (s *Server) congfigureServer() {
 func (s *Server) Ping(rw http.ResponseWriter, r *http.Request) {
 	s.logger.Info("Ping request received")
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Hello from proxy!"))
+	rw.Write([]byte("Hello from balancer!"))
 }

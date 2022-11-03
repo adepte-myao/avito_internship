@@ -32,7 +32,7 @@ func main() {
 	router := mux.NewRouter()
 	store := storage.NewStore(&cfg.Store, logger)
 	if err = store.Open(); err != nil {
-		fmt.Println("[ERROR]: ", err)
+		logger.Error(err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func main() {
 
 	err = server.Start()
 	if err != nil {
-		fmt.Println("[ERROR]: ", err)
+		logger.Error(err)
 		return
 	}
 }
