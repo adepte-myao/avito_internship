@@ -1,0 +1,6 @@
+server:
+  bind_addr: ":9096"
+  log_level: "debug"
+
+store:
+  database_url: "postgres://balancer:superpass@db:5432/userbalances?sslmode=disable"

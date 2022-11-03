@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+
+  balancer:
+    container_name: balancer
+
+    build:
+      context: ./
+      dockerfile: ./build/docker/service/Dockerfile
+    ports:
+      - 9096:9096
+    links:
+      - db
+    depends_on:
+      - db
+
+  db:
+    container_name: db_balancer
+    build: ./build/docker/db
+    restart: always
+    volumes:
+      - pgs_user_balances_volume:/var/lib/postgresql/data
+    ports:
+      - 5434:5432
+    environment:
+      POSTGRES_USER: balancer
+      POSTGRES_PASSWORD: superpass
+      POSTGRES_DB: userbalances
+
+volumes:
+  pgs_user_balances_volume:

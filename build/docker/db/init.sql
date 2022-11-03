@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS user_balances (
+    id SERIAL PRIMARY KEY,
+    balance MONEY NOT NULL
+);
