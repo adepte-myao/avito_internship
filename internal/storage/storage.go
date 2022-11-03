@@ -9,20 +9,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Store struct {
+type Storage struct {
 	config *config.StoreConfig
 	db     *sql.DB
 	logger *logrus.Logger
 }
 
-func NewStore(config *config.StoreConfig, logger *logrus.Logger) *Store {
-	return &Store{
+func NewStorage(config *config.StoreConfig, logger *logrus.Logger) *Storage {
+	return &Storage{
 		config: config,
 		logger: logger,
 	}
 }
 
-func (s *Store) Open() error {
+func (s *Storage) Open() error {
 	s.logger.Info("Connecting to database: first attempt")
 
 	db, err := sql.Open("postgres", s.config.DatabaseURL)
@@ -39,7 +39,7 @@ func (s *Store) Open() error {
 	s.logger.Info("Connected to database")
 
 	if err := db.Ping(); err != nil {
-		s.logger.Error("Ping to database wasnot successful. Reason: ", err.Error())
+		s.logger.Error("Ping to database was not successful. Reason: ", err.Error())
 		return err
 	}
 	s.logger.Info("Ping to database is successful")
@@ -49,6 +49,6 @@ func (s *Store) Open() error {
 	return nil
 }
 
-func (s *Store) Close() {
+func (s *Storage) Close() {
 	s.db.Close()
 }

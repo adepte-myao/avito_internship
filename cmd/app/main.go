@@ -30,8 +30,8 @@ func main() {
 
 	logger := logrus.New()
 	router := mux.NewRouter()
-	store := storage.NewStore(&cfg.Store, logger)
-	if err = store.Open(); err != nil {
+	storage := storage.NewStorage(&cfg.Store, logger)
+	if err = storage.Open(); err != nil {
 		logger.Error(err)
 		return
 	}

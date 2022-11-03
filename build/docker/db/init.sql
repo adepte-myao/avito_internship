@@ -1,28 +1,16 @@
-CREATE TABLE IF NOT EXISTS user_balances (
+CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY,
     balance MONEY NOT NULL,
-    CONSTRAINT nonNegativeBalanceCheck 
-        CHECK ( balance >= 0 )
+    CONSTRAINT nonNegativeBalanceCheck CHECK (balance >= 0::MONEY)
 );
-
 CREATE TABLE IF NOT EXISTS services (
-    id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY, 
     name TEXT
 );
-
-CREATE TABLE IF NOT EXISTS active_reserves (
-    id SERIAL PRIMARY KEY,
-    balanceID INTEGER REFERENCES user_balances (id) NOT NULL,
-    serviceID INTEGER REFERENCES services (id) NOT NULL,
-    orderID BIGINT NOT NULL,
-    totalCost MONEY NOT NULL
-);
-
 CREATE TYPE reserve_state AS ENUM ('reserved', 'cancelled', 'accepted');
-
 CREATE TABLE IF NOT EXISTS reserves_history (
     id BIGSERIAL PRIMARY KEY,
-    balanceID INTEGER REFERENCES user_balances (id) NOT NULL,
+    accountID INTEGER REFERENCES accounts (id) NOT NULL,
     serviceID INTEGER REFERENCES services (id) NOT NULL,
     orderID BIGINT NOT NULL,
     totalCost MONEY NOT NULL,
@@ -30,12 +18,11 @@ CREATE TABLE IF NOT EXISTS reserves_history (
     record_time TIMESTAMP WITH TIME ZONE NOT NULL,
     balanceAfter MONEY NOT NULL
 );
-
 CREATE TYPE transfer_type AS ENUM ('crediting', 'debiting');
-
 CREATE TABLE IF NOT EXISTS custom_transfers_history (
     id BIGSERIAL PRIMARY KEY,
-    balanceID INTEGER REFERENCES user_balances (id) NOT NULL,
+    accountID INTEGER REFERENCES accounts (id) NOT NULL,
+    otherAccountID INTEGER REFERENCES accounts (id) DEFAULT NULL,
     transferType transfer_type NOT NULL,
     amount MONEY NOT NULL,
     record_time TIMESTAMP WITH TIME ZONE NOT NULL,
