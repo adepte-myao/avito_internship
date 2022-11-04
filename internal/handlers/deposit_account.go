@@ -42,6 +42,7 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 
 	_, err = handler.accountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
+		// TODO: can't be other errors except no account?
 		err := handler.accountRepo.CreateAccount(tx, data.AccountId)
 		if err != nil {
 			// TODO

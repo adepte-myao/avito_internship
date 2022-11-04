@@ -28,3 +28,7 @@ CREATE TABLE IF NOT EXISTS custom_transfers_history (
     record_time TIMESTAMP WITH TIME ZONE NOT NULL,
     balanceAfter MONEY NOT NULL
 );
+
+INSERT INTO services (id, name)
+    SELECT series.series, concat('service_', series.series)
+        FROM generate_series(1, 50) as series;
