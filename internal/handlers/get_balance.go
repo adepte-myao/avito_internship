@@ -10,49 +10,51 @@ import (
 )
 
 type GetBalanceHandler struct {
-	logger      *logrus.Logger
-	accountRepo *storage.AccountRepository
-	txHelper    *storage.TransactionHelper
+	Logger      *logrus.Logger
+	AccountRepo storage.AccountRepo
+	TxHelper    storage.SQLTransactionHelper
 }
 
-func NewGetBalanceHandler(logger *logrus.Logger, store *storage.Storage) *GetBalanceHandler {
+func NewGetBalanceHandler(Logger *logrus.Logger, store *storage.Storage) *GetBalanceHandler {
 	return &GetBalanceHandler{
-		logger:      logger,
-		accountRepo: storage.NewAccountRepository(),
-		txHelper:    storage.NewTransactionHelper(store),
+		Logger:      Logger,
+		AccountRepo: storage.NewAccountRepository(),
+		TxHelper:    storage.NewTransactionHelper(store),
 	}
 }
 
 func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request) {
-	handler.logger.Info("Get balance request received")
+	handler.Logger.Info("Get balance request received")
 
 	var data dtos.GetBalanceDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		handler.logger.Error("cannot decode request body: ", err.Error())
-		// TODO: find out what part of body was not decoded, maybe get more user-friendly output
+		handler.Logger.Error("cannot decode request body: ", err.Error())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		rw.Write([]byte("invalid request body"))
 		return
 	}
 
-	tx, err := handler.txHelper.BeginTransaction()
+	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// TODO
+		handler.Logger.Error(err.Error())
+
+		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer handler.txHelper.RollbackTransaction(tx)
+	defer handler.TxHelper.RollbackTransaction(tx)
 
-	account, err := handler.accountRepo.GetAccount(tx, data.AccountId)
+	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
-		handler.logger.Error("Account does not exist")
+		handler.Logger.Error("account with id", data.AccountId, "does not exist")
+
+		rw.WriteHeader(http.StatusBadRequest)
+		rw.Write([]byte("account with given id does not exist"))
 		return
 	}
 
-	handler.txHelper.CommitTransaction(tx)
+	handler.TxHelper.CommitTransaction(tx)
 
-	err = json.NewEncoder(rw).Encode(account)
-	if err != nil {
-		// TODO
-		return
-	}
-
-	rw.WriteHeader(http.StatusNoContent)
+	rw.WriteHeader(http.StatusOK)
+	json.NewEncoder(rw).Encode(account)
 }
