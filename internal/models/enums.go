@@ -47,3 +47,12 @@ func (tt TransferType) String() string {
 	}
 	return "unknown"
 }
+
+func (tt *TransferType) FromString(val string) {
+	switch val {
+	case "deposit":
+		*tt = Deposit
+	case "withdraw":
+		*tt = Withdraw
+	}
+}
