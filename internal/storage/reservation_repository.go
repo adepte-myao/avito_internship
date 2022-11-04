@@ -2,9 +2,12 @@ package storage
 
 import (
 	"database/sql"
+	"regexp"
+	"strings"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 type ReservationRepository struct{}
@@ -21,7 +24,7 @@ func (repo *ReservationRepository) CreateReservation(tx *sql.Tx, reservation mod
 		reservation.ServiceId,
 		reservation.OrderId,
 		reservation.TotalCost,
-		reservation.State,
+		reservation.State.String(),
 		reservation.RecordTime,
 		reservation.BalanceAfter,
 	)
@@ -39,13 +42,32 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 		OrderId:   reservationDto.OrderId,
 		TotalCost: reservationDto.TotalCost,
 	}
+	var state string
+	var balance string
 	err := tx.QueryRow(
-		`SELECT state, balanceAfter
+		`SELECT state, balanceAfter FROM reserves_history
 			WHERE accountID = $1 AND serviceID = $2 AND orderID = $3 AND totalCost = $4`,
 		reservationDto.AccountId,
 		reservationDto.ServiceId,
 		reservationDto.OrderId,
 		reservationDto.TotalCost,
-	).Scan(&reservation.State, &reservation.BalanceAfter)
+	).Scan(&state, &balance)
+
+	if err != nil {
+		return models.Reservation{}, err
+	}
+
+	// balance format: "123.45 P"
+	regBalance := regexp.MustCompile(`[^0-9,]`)
+	balance = regBalance.ReplaceAllString(balance, "")
+
+	balance = strings.Replace(balance, ",", ".", 1)
+
+	reservation.BalanceAfter, err = decimal.NewFromString(balance)
+	if err != nil {
+		return models.Reservation{}, err
+	}
+
+	reservation.State.FromString(state)
 	return reservation, err
 }

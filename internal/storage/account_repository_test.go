@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getRepoTxCommitFunc(t *testing.T) (*storage.AccountRepository, *sql.Tx, func(*sql.Tx)) {
+func getAccountRepoTxCommitFunc(t *testing.T) (*storage.AccountRepository, *sql.Tx, func(*sql.Tx)) {
 	storageStruct, closeFunc := storage.TestStore(t, databaseURL)
 
 	repo := storage.NewAccountRepository()
@@ -25,7 +25,7 @@ func getRepoTxCommitFunc(t *testing.T) (*storage.AccountRepository, *sql.Tx, fun
 }
 
 func TestAccountRepository_CreateAccount(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 15
@@ -35,7 +35,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 }
 
 func TestAccountRepository_GetAccount_Success(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 16
@@ -51,7 +51,7 @@ func TestAccountRepository_GetAccount_Success(t *testing.T) {
 }
 
 func TestAccountRepository_GetAccount_FailOnWrongID(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 17
@@ -64,7 +64,7 @@ func TestAccountRepository_GetAccount_FailOnWrongID(t *testing.T) {
 }
 
 func TestAccountRepository_IncreaseBalance_Success(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 19
@@ -84,7 +84,7 @@ func TestAccountRepository_IncreaseBalance_Success(t *testing.T) {
 }
 
 func TestAccountRepository_IncreaseBalance_FailOnNegativeValue(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 20
@@ -105,7 +105,7 @@ func TestAccountRepository_IncreaseBalance_FailOnNegativeValue(t *testing.T) {
 }
 
 func TestAccountRepository_DecreaseBalance_Success(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 21
@@ -127,7 +127,7 @@ func TestAccountRepository_DecreaseBalance_Success(t *testing.T) {
 }
 
 func TestAccountRepository_DecreaseBalance_FailOnNegativeValue(t *testing.T) {
-	repo, tx, commitFunc := getRepoTxCommitFunc(t)
+	repo, tx, commitFunc := getAccountRepoTxCommitFunc(t)
 	defer commitFunc(tx)
 
 	var accountId int32 = 22

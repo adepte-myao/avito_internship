@@ -20,6 +20,17 @@ func (rs ReserveState) String() string {
 	return "unknown"
 }
 
+func (rs *ReserveState) FromString(val string) {
+	switch val {
+	case "reserved":
+		*rs = Reserved
+	case "cancelled":
+		*rs = Cancelled
+	case "accepted":
+		*rs = Accepted
+	}
+}
+
 type TransferType int
 
 const (

@@ -22,7 +22,7 @@ func TestStore(t *testing.T, databaseURL string) (*Storage, func()) {
 		t.Fatal(err)
 	}
 
-	tables := []string{"accounts"}
+	tables := []string{"accounts", "reserves_history"}
 	if _, err := storage.db.Exec(fmt.Sprintf("TRUNCATE %s CASCADE", strings.Join(tables, ", "))); err != nil {
 		t.Fatal(err)
 	}
