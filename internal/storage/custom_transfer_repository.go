@@ -1,11 +1,7 @@
 package storage
 
-type CustomTransferRepository struct {
-	storage *Storage
-}
+type CustomTransferRepository struct{}
 
-func NewCustomTransferRepository(storage *Storage) *CustomTransferRepository {
-	return &CustomTransferRepository{
-		storage: storage,
-	}
+func NewCustomTransferRepository() *CustomTransferRepository {
+	return &CustomTransferRepository{}
 }

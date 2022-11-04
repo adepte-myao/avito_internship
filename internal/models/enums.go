@@ -23,16 +23,16 @@ func (rs ReserveState) String() string {
 type TransferType int
 
 const (
-	Crediting TransferType = iota
-	Debiting
+	Deposit TransferType = iota
+	Withdraw
 )
 
 func (tt TransferType) String() string {
 	switch tt {
-	case Crediting:
-		return "crediting"
-	case Debiting:
-		return "debiting"
+	case Deposit:
+		return "deposit"
+	case Withdraw:
+		return "withdraw"
 	}
 	return "unknown"
 }

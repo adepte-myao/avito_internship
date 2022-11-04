@@ -15,13 +15,15 @@ type MakeReservationHandler struct {
 	logger          *logrus.Logger
 	accountRepo     *storage.AccountRepository
 	reservationRepo *storage.ReservationRepository
+	txHelper        *storage.TransactionHelper
 }
 
 func NewMakeReservationHandler(logger *logrus.Logger, store *storage.Storage) *MakeReservationHandler {
 	return &MakeReservationHandler{
 		logger:          logger,
-		accountRepo:     storage.NewAccountRepository(store),
-		reservationRepo: storage.NewReservationRepository(store),
+		accountRepo:     storage.NewAccountRepository(),
+		reservationRepo: storage.NewReservationRepository(),
+		txHelper:        storage.NewTransactionHelper(store),
 	}
 }
 
@@ -35,13 +37,26 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	account, err := handler.accountRepo.GetAccount(data.AccountId)
+	tx, err := handler.txHelper.BeginTransaction()
+	if err != nil {
+		// TODO
+		return
+	}
+	defer handler.txHelper.RollbackTransaction(tx)
+
+	account, err := handler.accountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO
 		return
 	}
 
 	if account.Balance.LessThan(data.TotalCost) {
+		// TODO
+		return
+	}
+
+	err = handler.accountRepo.DecreaseBalance(tx, data.AccountId, data.TotalCost)
+	if err != nil {
 		// TODO
 		return
 	}
@@ -55,11 +70,13 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		RecordTime:   time.Now(),
 		BalanceAfter: account.Balance.Sub(data.TotalCost),
 	}
-	err = handler.reservationRepo.CreateReservation(reservation)
+	err = handler.reservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
 		// TODO
 		return
 	}
+
+	handler.txHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

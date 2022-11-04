@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS reserves_history (
     record_time TIMESTAMP WITH TIME ZONE NOT NULL,
     balanceAfter MONEY NOT NULL
 );
-CREATE TYPE transfer_type AS ENUM ('crediting', 'debiting');
+CREATE TYPE transfer_type AS ENUM ('deposit', 'withdraw');
 CREATE TABLE IF NOT EXISTS custom_transfers_history (
     id BIGSERIAL PRIMARY KEY,
     accountID INTEGER REFERENCES accounts (id) NOT NULL,

@@ -12,12 +12,14 @@ import (
 type WithdrawAccountHandler struct {
 	logger      *logrus.Logger
 	accountRepo *storage.AccountRepository
+	txHelper    *storage.TransactionHelper
 }
 
 func NewWithdrawAccountHandler(logger *logrus.Logger, store *storage.Storage) *WithdrawAccountHandler {
 	return &WithdrawAccountHandler{
 		logger:      logger,
-		accountRepo: storage.NewAccountRepository(store),
+		accountRepo: storage.NewAccountRepository(),
+		txHelper:    storage.NewTransactionHelper(store),
 	}
 }
 
@@ -31,12 +33,14 @@ func (handler *WithdrawAccountHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if data.AccountId <= 0 {
+	tx, err := handler.txHelper.BeginTransaction()
+	if err != nil {
 		// TODO
 		return
 	}
+	defer handler.txHelper.RollbackTransaction(tx)
 
-	account, err := handler.accountRepo.GetAccount(data.AccountId)
+	account, err := handler.accountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO
 		handler.logger.Error("Account does not exist")
@@ -47,12 +51,14 @@ func (handler *WithdrawAccountHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = handler.accountRepo.DecreaseBalance(data.AccountId, data.Value)
+	err = handler.accountRepo.DecreaseBalance(tx, data.AccountId, data.Value)
 	if err != nil {
 		// TODO
 		handler.logger.Error("decreasing balance: : ", err.Error())
 		return
 	}
+
+	handler.txHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

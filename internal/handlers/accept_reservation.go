@@ -15,13 +15,15 @@ type AcceptReservationHandler struct {
 	logger          *logrus.Logger
 	accountRepo     *storage.AccountRepository
 	reservationRepo *storage.ReservationRepository
+	txHelper        *storage.TransactionHelper
 }
 
 func NewAcceptReservationHandler(logger *logrus.Logger, store *storage.Storage) *AcceptReservationHandler {
 	return &AcceptReservationHandler{
 		logger:          logger,
-		accountRepo:     storage.NewAccountRepository(store),
-		reservationRepo: storage.NewReservationRepository(store),
+		accountRepo:     storage.NewAccountRepository(),
+		reservationRepo: storage.NewReservationRepository(),
+		txHelper:        storage.NewTransactionHelper(store),
 	}
 }
 
@@ -35,7 +37,14 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	reservation, err := handler.reservationRepo.GetReservation(data)
+	tx, err := handler.txHelper.BeginTransaction()
+	if err != nil {
+		// TODO
+		return
+	}
+	defer handler.txHelper.RollbackTransaction(tx)
+
+	reservation, err := handler.reservationRepo.GetReservation(tx, data)
 	if err != nil {
 		// TODO
 		return
@@ -43,11 +52,12 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 
 	reservation.State = models.Accepted
 	reservation.RecordTime = time.Now()
-	err = handler.reservationRepo.CreateReservation(reservation)
+	err = handler.reservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
 		// TODO
 		return
 	}
+	handler.txHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

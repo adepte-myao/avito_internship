@@ -12,12 +12,14 @@ import (
 type GetBalanceHandler struct {
 	logger      *logrus.Logger
 	accountRepo *storage.AccountRepository
+	txHelper    *storage.TransactionHelper
 }
 
 func NewGetBalanceHandler(logger *logrus.Logger, store *storage.Storage) *GetBalanceHandler {
 	return &GetBalanceHandler{
 		logger:      logger,
-		accountRepo: storage.NewAccountRepository(store),
+		accountRepo: storage.NewAccountRepository(),
+		txHelper:    storage.NewTransactionHelper(store),
 	}
 }
 
@@ -31,11 +33,20 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		return
 	}
 
-	account, err := handler.accountRepo.GetAccount(data.AccountId)
+	tx, err := handler.txHelper.BeginTransaction()
+	if err != nil {
+		// TODO
+		return
+	}
+	defer handler.txHelper.RollbackTransaction(tx)
+
+	account, err := handler.accountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
 		handler.logger.Error("Account does not exist")
 		return
 	}
+
+	handler.txHelper.CommitTransaction(tx)
 
 	err = json.NewEncoder(rw).Encode(account)
 	if err != nil {
