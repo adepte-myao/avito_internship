@@ -52,18 +52,31 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 
 	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
-		// TODO
+		handler.Logger.Errorf("account with ID %d does not exist", data.AccountId)
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "account does not exist",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
 	if account.Balance.LessThan(data.TotalCost) {
-		// TODO
+		handler.Logger.Errorf("not enough money: account: id: %d, balance: %s; required: %s",
+			account.ID, account.Balance.String(), data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "not enough money",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
 	err = handler.AccountRepo.DecreaseBalance(tx, data.AccountId, data.TotalCost)
 	if err != nil {
-		// TODO
+		// Should not be there
 		return
 	}
 
@@ -78,7 +91,7 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 	}
 	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
-		// TODO
+		// Should not be there
 		return
 	}
 
