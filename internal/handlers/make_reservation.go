@@ -3,24 +3,22 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/errors"
-	"github.com/adepte-myao/avito_internship/internal/models"
-	"github.com/adepte-myao/avito_internship/internal/storage"
+	"github.com/adepte-myao/avito_internship/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
 type MakeReservationHandler struct {
-	Logger     *logrus.Logger
-	Repository storage.SQLRepository
+	Logger  *logrus.Logger
+	Service *services.Service
 }
 
-func NewMakeReservationHandler(Logger *logrus.Logger, repo storage.SQLRepository) *MakeReservationHandler {
+func NewMakeReservationHandler(Logger *logrus.Logger, serv *services.Service) *MakeReservationHandler {
 	return &MakeReservationHandler{
-		Logger:     Logger,
-		Repository: repo,
+		Logger:  Logger,
+		Service: serv,
 	}
 }
 
@@ -39,59 +37,17 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
+	err := handler.Service.Reservation.MakeReservation(data)
 	if err != nil {
-		// Should not be here
-		return
-	}
-	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
-
-	account, err := handler.Repository.Account.GetAccount(tx, data.AccountId)
-	if err != nil {
-		handler.Logger.Errorf("account with ID %d does not exist", data.AccountId)
+		handler.Logger.Error(err.Error())
 
 		rw.WriteHeader(http.StatusBadRequest)
 		outErr := errors.ResponseError{
-			Reason: "account does not exist",
+			Reason: err.Error(),
 		}
 		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
-
-	if account.Balance.LessThan(data.TotalCost) {
-		handler.Logger.Errorf("not enough money: account: id: %d, balance: %s; required: %s",
-			account.ID, account.Balance.String(), data.TotalCost.String())
-
-		rw.WriteHeader(http.StatusBadRequest)
-		outErr := errors.ResponseError{
-			Reason: "not enough money",
-		}
-		json.NewEncoder(rw).Encode(outErr)
-		return
-	}
-
-	err = handler.Repository.Account.DecreaseBalance(tx, data.AccountId, data.TotalCost)
-	if err != nil {
-		// Should not be here
-		return
-	}
-
-	reservation := models.Reservation{
-		AccountId:    data.AccountId,
-		ServiceId:    data.ServiceId,
-		OrderId:      data.OrderId,
-		TotalCost:    data.TotalCost,
-		State:        models.Reserved,
-		RecordTime:   time.Now(),
-		BalanceAfter: account.Balance.Sub(data.TotalCost),
-	}
-	err = handler.Repository.Reservation.CreateReservation(tx, reservation)
-	if err != nil {
-		// Should not be here
-		return
-	}
-
-	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

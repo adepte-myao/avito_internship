@@ -40,13 +40,13 @@ func main() {
 	repository := storage.NewSQLRepository(db)
 
 	// Handlers initialization
-	makeReservationHandler := handlers.NewMakeReservationHandler(logger, storage)
-	acceptReservationHandler := handlers.NewAcceptReservationHandler(logger, storage)
-	cancelReservationHandler := handlers.NewCancelReservationHandler(logger, storage)
+	makeReservationHandler := handlers.NewMakeReservationHandler(logger, *repository)
+	acceptReservationHandler := handlers.NewAcceptReservationHandler(logger, *repository)
+	cancelReservationHandler := handlers.NewCancelReservationHandler(logger, *repository)
 
-	getBalanceHandler := handlers.NewGetBalanceHandler(logger, storage)
-	depositHandler := handlers.NewDepositAccountHandler(logger, storage)
-	withdrawHandler := handlers.NewWithdrawAccountHandler(logger, storage)
+	getBalanceHandler := handlers.NewGetBalanceHandler(logger, *repository)
+	depositHandler := handlers.NewDepositAccountHandler(logger, *repository)
+	withdrawHandler := handlers.NewWithdrawAccountHandler(logger, *repository)
 
 	server := server.NewServer(&cfg, logger, router)
 
