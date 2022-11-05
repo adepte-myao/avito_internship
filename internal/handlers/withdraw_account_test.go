@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDepositAccountHandler(t *testing.T) {
+func TestWithdrawAccountHandler(t *testing.T) {
 	type accRepoBehavior func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal)
 	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
 
@@ -30,27 +30,11 @@ func TestDepositAccountHandler(t *testing.T) {
 		expectedResponseBody string
 	}{
 		{
-			name:      "Success account exists",
+			name:      "Success",
 			inputBody: `{"accountId":1,"value":"100.00"}`,
 			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {
 				accRepo.EXPECT().GetAccount(tx, accId).Return(models.Account{ID: 1, Balance: decimal.NewFromInt(200)}, nil)
-				accRepo.EXPECT().IncreaseBalance(tx, accId, gomock.AssignableToTypeOf(decimal.NewFromInt(1))).Return(nil)
-			},
-			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
-				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
-				txHelper.EXPECT().CommitTransaction(tx).Return()
-				txHelper.EXPECT().RollbackTransaction(tx).Return()
-			},
-			expextedStatusCode:   204,
-			expectedResponseBody: "",
-		},
-		{
-			name:      "Success account does not exist",
-			inputBody: `{"accountId":1,"value":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {
-				accRepo.EXPECT().GetAccount(tx, accId).Return(models.Account{}, errors.New("not nil"))
-				accRepo.EXPECT().CreateAccount(tx, accId).Return(nil)
-				accRepo.EXPECT().IncreaseBalance(tx, accId, gomock.AssignableToTypeOf(decimal.NewFromInt(1))).Return(nil)
+				accRepo.EXPECT().DecreaseBalance(tx, accId, gomock.AssignableToTypeOf(decimal.NewFromInt(1))).Return(nil)
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
@@ -67,6 +51,32 @@ func TestDepositAccountHandler(t *testing.T) {
 			txHelperBehavior:     func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {},
 			expextedStatusCode:   400,
 			expectedResponseBody: "{\"reason\":\"invalid request body\"}\n",
+		},
+		{
+			name:      "Account does not exist",
+			inputBody: `{"accountId":1,"value":"100.00"}`,
+			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {
+				accRepo.EXPECT().GetAccount(tx, accId).Return(models.Account{}, errors.New("not nil"))
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expextedStatusCode:   400,
+			expectedResponseBody: "{\"reason\":\"account does not exist\"}\n",
+		},
+		{
+			name:      "Not enough money",
+			inputBody: `{"accountId":1,"value":"100.00"}`,
+			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {
+				accRepo.EXPECT().GetAccount(tx, accId).Return(models.Account{ID: 1, Balance: decimal.NewFromInt(50)}, nil)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expextedStatusCode:   400,
+			expectedResponseBody: "{\"reason\":\"not enough money\"}\n",
 		},
 	}
 
@@ -85,13 +95,13 @@ func TestDepositAccountHandler(t *testing.T) {
 			logger := logrus.New()
 			logger.Level = logrus.FatalLevel
 
-			handler := handlers.DepositAccountHandler{
+			handler := handlers.WithdrawAccountHandler{
 				Logger:      logger,
 				AccountRepo: accRepo,
 				TxHelper:    txHelper,
 			}
 
-			req, err := http.NewRequest("POST", "/deposit-account",
+			req, err := http.NewRequest("POST", "/withdraw-account",
 				bytes.NewBufferString(testCase.inputBody))
 			assert.NoError(t, err)
 			rw := httptest.NewRecorder()
