@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
+	"github.com/adepte-myao/avito_internship/internal/errors"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -31,7 +32,10 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		handler.Logger.Error("cannot decode request body: ", err.Error())
 
 		rw.WriteHeader(http.StatusBadRequest)
-		rw.Write([]byte("invalid request body"))
+		outError := errors.ResponseError{
+			Reason: "invalid request body",
+		}
+		json.NewEncoder(rw).Encode(outError)
 		return
 	}
 
@@ -49,7 +53,10 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		handler.Logger.Error("account with id", data.AccountId, "does not exist")
 
 		rw.WriteHeader(http.StatusBadRequest)
-		rw.Write([]byte("account with given id does not exist"))
+		outError := errors.ResponseError{
+			Reason: "account with given ID does not exist",
+		}
+		json.NewEncoder(rw).Encode(outError)
 		return
 	}
 

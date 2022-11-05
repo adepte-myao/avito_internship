@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,19 +19,19 @@ import (
 
 func TestGetBalanceHandler(t *testing.T) {
 	type accRepoBehavior func(accountRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accountId int32)
-	type txHelperBeginTxBehavior func(txHelper *mock_storage.MockSQLTransactionHelper)
+	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
 
 	testCases := []struct {
-		name                    string
-		inputBody               string
-		accRepoBehavior         accRepoBehavior
-		txHelperBeginTxBehavior txHelperBeginTxBehavior
-		expextedStatusCode      int
-		expectedResponseBody    string
+		name                 string
+		inputBody            string
+		accRepoBehavior      accRepoBehavior
+		txHelperBehavior     txHelperBehavior
+		expextedStatusCode   int
+		expectedResponseBody string
 	}{
 		{
-			name:      "Success",
-			inputBody: `{"accountId":"1"}`,
+			name:      "Success without fractional part",
+			inputBody: `{"accountId":1}`,
 			accRepoBehavior: func(accountRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accountId int32) {
 				accountRepo.EXPECT().GetAccount(tx, accountId).Return(models.Account{
 					ID:      int32(1),
@@ -38,11 +39,54 @@ func TestGetBalanceHandler(t *testing.T) {
 				}, nil,
 				)
 			},
-			txHelperBeginTxBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper) {
-				txHelper.EXPECT().BeginTransaction().Return(sql.Tx{}, nil)
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().CommitTransaction(tx).Return()
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
 			},
 			expextedStatusCode:   200,
-			expectedResponseBody: `{"accountId":"1","balance":"100.00"}`,
+			expectedResponseBody: "{\"accountId\":1,\"balance\":\"100\"}\n",
+		},
+		{
+			name:      "Success with fractional part",
+			inputBody: `{"accountId":1}`,
+			accRepoBehavior: func(accountRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accountId int32) {
+				accountRepo.EXPECT().GetAccount(tx, accountId).Return(models.Account{
+					ID:      int32(1),
+					Balance: decimal.NewFromFloat(100.01),
+				}, nil,
+				)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().CommitTransaction(tx).Return()
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expextedStatusCode:   200,
+			expectedResponseBody: "{\"accountId\":1,\"balance\":\"100.01\"}\n",
+		},
+		{
+			name:                 "Invalid request body",
+			inputBody:            `{"accountId":"1"}`,
+			accRepoBehavior:      func(accountRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accountId int32) {},
+			txHelperBehavior:     func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {},
+			expextedStatusCode:   400,
+			expectedResponseBody: "{\"reason\":\"invalid request body\"}\n",
+		},
+		{
+			name:      "Account does not exist",
+			inputBody: `{"accountId":1}`,
+			accRepoBehavior: func(accountRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accountId int32) {
+				accountRepo.EXPECT().GetAccount(tx, accountId).Return(models.Account{},
+					errors.New("not a real error, but it's not nil"),
+				)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expextedStatusCode:   400,
+			expectedResponseBody: "{\"reason\":\"account with given ID does not exist\"}\n",
 		},
 	}
 
@@ -55,7 +99,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			testCase.accRepoBehavior(accRepo, tx, int32(1))
 
 			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
-			testCase.txHelperBeginTxBehavior(txHelper)
+			testCase.txHelperBehavior(txHelper, tx)
 
 			logger := logrus.New()
 			logger.Level = logrus.FatalLevel

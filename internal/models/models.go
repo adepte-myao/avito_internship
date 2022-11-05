@@ -7,7 +7,7 @@ import (
 )
 
 type Account struct {
-	ID      int32           `json:"id"`
+	ID      int32           `json:"accountId"`
 	Balance decimal.Decimal `json:"balance"`
 }
 
