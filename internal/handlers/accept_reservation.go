@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
+	"github.com/adepte-myao/avito_internship/internal/errors"
 	"github.com/adepte-myao/avito_internship/internal/models"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/sirupsen/logrus"
@@ -31,25 +32,58 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	var data dtos.ReservationDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		handler.Logger.Error("cannot decode request body: ", err.Error())
-		// TODO: find out what part of body was not decoded, maybe get more user-friendly output
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "invalid request body",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
 	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// TODO
+		// Shouldn't be there
 		return
 	}
 	defer handler.TxHelper.RollbackTransaction(tx)
 
 	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
 	if err != nil {
-		// TODO
+		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
+			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "reserved reservation with given params does not exist",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
-	if reservation.State != models.Reserved {
-		// TODO
+	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Accepted)
+	if err == nil {
+		handler.Logger.Errorf("already accepted reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
+			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "given reservation is already accepted",
+		}
+		json.NewEncoder(rw).Encode(outErr)
+		return
+	}
+
+	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Cancelled)
+	if err == nil {
+		handler.Logger.Errorf("already cancelled reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
+			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "given reservation was cancelled",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
@@ -57,7 +91,7 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	reservation.RecordTime = time.Now()
 	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
-		// TODO
+		// Shouldn't be there
 		return
 	}
 	handler.TxHelper.CommitTransaction(tx)
