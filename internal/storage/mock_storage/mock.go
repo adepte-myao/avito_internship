@@ -132,18 +132,18 @@ func (mr *MockReservationRepoMockRecorder) CreateReservation(tx, reservation int
 }
 
 // GetReservation mocks base method.
-func (m *MockReservationRepo) GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto) (models.Reservation, error) {
+func (m *MockReservationRepo) GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReservation", tx, reservationDto)
+	ret := m.ctrl.Call(m, "GetReservation", tx, reservationDto, state)
 	ret0, _ := ret[0].(models.Reservation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetReservation indicates an expected call of GetReservation.
-func (mr *MockReservationRepoMockRecorder) GetReservation(tx, reservationDto interface{}) *gomock.Call {
+func (mr *MockReservationRepoMockRecorder) GetReservation(tx, reservationDto, state interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReservation", reflect.TypeOf((*MockReservationRepo)(nil).GetReservation), tx, reservationDto)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReservation", reflect.TypeOf((*MockReservationRepo)(nil).GetReservation), tx, reservationDto, state)
 }
 
 // MockSQLTransactionHelper is a mock of SQLTransactionHelper interface.

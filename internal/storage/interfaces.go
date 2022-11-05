@@ -19,7 +19,7 @@ type AccountRepo interface {
 
 type ReservationRepo interface {
 	CreateReservation(tx *sql.Tx, reservation models.Reservation) error
-	GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto) (models.Reservation, error)
+	GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error)
 }
 
 type SQLTransactionHelper interface {

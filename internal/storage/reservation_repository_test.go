@@ -85,7 +85,7 @@ func TestReservationRepository_GetReservation_Success(t *testing.T) {
 		OrderId:   orderId,
 		TotalCost: totalCost,
 	}
-	reservation, err := repo.GetReservation(tx, reservationDto)
+	reservation, err := repo.GetReservation(tx, reservationDto, models.Reserved)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, reservation)
@@ -152,7 +152,7 @@ func TestReservationRepository_GetReservation_FailsOnWrongParam(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := repo.GetReservation(tx, testCase.reservation())
+			_, err := repo.GetReservation(tx, testCase.reservation(), models.Reserved)
 			assert.Error(t, err)
 		})
 	}

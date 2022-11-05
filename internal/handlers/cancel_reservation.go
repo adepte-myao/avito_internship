@@ -44,7 +44,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	}
 	defer handler.txHelper.RollbackTransaction(tx)
 
-	reservation, err := handler.reservationRepo.GetReservation(tx, data)
+	reservation, err := handler.reservationRepo.GetReservation(tx, data, models.Reserved)
 	if err != nil {
 		// TODO
 		return

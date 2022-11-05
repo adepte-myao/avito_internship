@@ -35,23 +35,23 @@ func (repo *ReservationRepository) CreateReservation(tx *sql.Tx, reservation mod
 	return nil
 }
 
-func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto) (models.Reservation, error) {
+func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error) {
 	reservation := models.Reservation{
 		AccountId: reservationDto.AccountId,
 		ServiceId: reservationDto.ServiceId,
 		OrderId:   reservationDto.OrderId,
 		TotalCost: reservationDto.TotalCost,
 	}
-	var state string
 	var balance string
 	err := tx.QueryRow(
-		`SELECT state, balanceAfter FROM reserves_history
-			WHERE accountID = $1 AND serviceID = $2 AND orderID = $3 AND totalCost = $4`,
+		`SELECT balanceAfter FROM reserves_history
+			WHERE accountID = $1 AND serviceID = $2 AND orderID = $3 AND totalCost = $4 AND state = $5`,
 		reservationDto.AccountId,
 		reservationDto.ServiceId,
 		reservationDto.OrderId,
 		reservationDto.TotalCost,
-	).Scan(&state, &balance)
+		state.String(),
+	).Scan(&balance)
 
 	if err != nil {
 		return models.Reservation{}, err
@@ -68,6 +68,5 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 		return models.Reservation{}, err
 	}
 
-	reservation.State.FromString(state)
 	return reservation, err
 }

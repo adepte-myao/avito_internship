@@ -110,7 +110,7 @@ func TestGetBalanceHandler(t *testing.T) {
 				TxHelper:    txHelper,
 			}
 
-			req, err := http.NewRequest("POST", "/get-balance",
+			req, err := http.NewRequest("GET", "/get-balance",
 				bytes.NewBufferString(testCase.inputBody))
 			assert.NoError(t, err)
 			rw := httptest.NewRecorder()

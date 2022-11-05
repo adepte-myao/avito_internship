@@ -12,52 +12,55 @@ import (
 )
 
 type AcceptReservationHandler struct {
-	logger          *logrus.Logger
-	accountRepo     *storage.AccountRepository
-	reservationRepo *storage.ReservationRepository
-	txHelper        *storage.TransactionHelper
+	Logger          *logrus.Logger
+	ReservationRepo storage.ReservationRepo
+	TxHelper        storage.SQLTransactionHelper
 }
 
-func NewAcceptReservationHandler(logger *logrus.Logger, store *storage.Storage) *AcceptReservationHandler {
+func NewAcceptReservationHandler(Logger *logrus.Logger, store *storage.Storage) *AcceptReservationHandler {
 	return &AcceptReservationHandler{
-		logger:          logger,
-		accountRepo:     storage.NewAccountRepository(),
-		reservationRepo: storage.NewReservationRepository(),
-		txHelper:        storage.NewTransactionHelper(store),
+		Logger:          Logger,
+		ReservationRepo: storage.NewReservationRepository(),
+		TxHelper:        storage.NewTransactionHelper(store),
 	}
 }
 
 func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.Request) {
-	handler.logger.Info("Make reservation request received")
+	handler.Logger.Info("Make reservation request received")
 
 	var data dtos.ReservationDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		handler.logger.Error("cannot decode request body: ", err.Error())
+		handler.Logger.Error("cannot decode request body: ", err.Error())
 		// TODO: find out what part of body was not decoded, maybe get more user-friendly output
 		return
 	}
 
-	tx, err := handler.txHelper.BeginTransaction()
+	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
 		// TODO
 		return
 	}
-	defer handler.txHelper.RollbackTransaction(tx)
+	defer handler.TxHelper.RollbackTransaction(tx)
 
-	reservation, err := handler.reservationRepo.GetReservation(tx, data)
+	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
 	if err != nil {
+		// TODO
+		return
+	}
+
+	if reservation.State != models.Reserved {
 		// TODO
 		return
 	}
 
 	reservation.State = models.Accepted
 	reservation.RecordTime = time.Now()
-	err = handler.reservationRepo.CreateReservation(tx, reservation)
+	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
 		// TODO
 		return
 	}
-	handler.txHelper.CommitTransaction(tx)
+	handler.TxHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }
