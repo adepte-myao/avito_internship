@@ -6,19 +6,19 @@ import (
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/errors"
-	"github.com/adepte-myao/avito_internship/internal/storage"
+	"github.com/adepte-myao/avito_internship/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
 type DepositAccountHandler struct {
-	Logger     *logrus.Logger
-	Repository storage.SQLRepository
+	Logger  *logrus.Logger
+	Service *services.Service
 }
 
-func NewDepositAccountHandler(Logger *logrus.Logger, repo storage.SQLRepository) *DepositAccountHandler {
+func NewDepositAccountHandler(Logger *logrus.Logger, serv *services.Service) *DepositAccountHandler {
 	return &DepositAccountHandler{
-		Logger:     Logger,
-		Repository: repo,
+		Logger:  Logger,
+		Service: serv,
 	}
 }
 
@@ -38,32 +38,13 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 		return
 	}
 
-	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
+	err := handler.Service.Account.Deposit(data)
 	if err != nil {
-		// Should not be here
+		handler.Logger.Error(err.Error())
+		rw.WriteHeader(http.StatusBadRequest)
+		writeErrorToResponse(err, rw)
 		return
 	}
-	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
-
-	_, err = handler.Repository.Account.GetAccount(tx, data.AccountId)
-	if err != nil {
-		// TODO: can't be other errors except no account?
-		err := handler.Repository.Account.CreateAccount(tx, data.AccountId)
-		if err != nil {
-			// Should not be here
-			handler.Logger.Error("creation account: ", err.Error())
-			return
-		}
-	}
-
-	err = handler.Repository.Account.IncreaseBalance(tx, data.AccountId, data.Value)
-	if err != nil {
-		// Should no be here
-		handler.Logger.Error("increasing balance: : ", err.Error())
-		return
-	}
-
-	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

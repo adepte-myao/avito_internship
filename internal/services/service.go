@@ -25,6 +25,7 @@ type Service struct {
 
 func NewService(repo *storage.SQLRepository) *Service {
 	return &Service{
+		Account:     NewAccounter(repo),
 		Reservation: NewReservationer(repo),
 	}
 }

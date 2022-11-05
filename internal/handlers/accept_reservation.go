@@ -40,12 +40,8 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	err := handler.Service.Reservation.AcceptReservation(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
-
 		rw.WriteHeader(http.StatusBadRequest)
-		outErr := errors.ResponseError{
-			Reason: err.Error(),
-		}
-		json.NewEncoder(rw).Encode(outErr)
+		writeErrorToResponse(err, rw)
 		return
 	}
 

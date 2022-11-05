@@ -6,19 +6,19 @@ import (
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/errors"
-	"github.com/adepte-myao/avito_internship/internal/storage"
+	"github.com/adepte-myao/avito_internship/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
 type GetBalanceHandler struct {
-	Logger     *logrus.Logger
-	Repository storage.SQLRepository
+	Logger  *logrus.Logger
+	Service *services.Service
 }
 
-func NewGetBalanceHandler(Logger *logrus.Logger, repo storage.SQLRepository) *GetBalanceHandler {
+func NewGetBalanceHandler(Logger *logrus.Logger, serv *services.Service) *GetBalanceHandler {
 	return &GetBalanceHandler{
-		Logger:     Logger,
-		Repository: repo,
+		Logger:  Logger,
+		Service: serv,
 	}
 }
 
@@ -37,28 +37,13 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
+	account, err := handler.Service.Account.GetBalance(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
-
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
-
-	account, err := handler.Repository.Account.GetAccount(tx, data.AccountId)
-	if err != nil {
-		handler.Logger.Error("account with id", data.AccountId, "does not exist")
-
 		rw.WriteHeader(http.StatusBadRequest)
-		outError := errors.ResponseError{
-			Reason: "account with given ID does not exist",
-		}
-		json.NewEncoder(rw).Encode(outError)
+		writeErrorToResponse(err, rw)
 		return
 	}
-
-	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusOK)
 	json.NewEncoder(rw).Encode(account)
