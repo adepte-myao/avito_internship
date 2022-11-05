@@ -51,7 +51,7 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 		// TODO: can't be other errors except no account?
 		err := handler.AccountRepo.CreateAccount(tx, data.AccountId)
 		if err != nil {
-			// TODO
+			// Should not be here
 			handler.Logger.Error("creation account: ", err.Error())
 			return
 		}
@@ -59,7 +59,7 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 
 	err = handler.AccountRepo.IncreaseBalance(tx, data.AccountId, data.Value)
 	if err != nil {
-		// TODO
+		// Should no be here
 		handler.Logger.Error("increasing balance: : ", err.Error())
 		return
 	}
