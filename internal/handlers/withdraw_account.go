@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TODO: trunc all digits after dot except two first
 type WithdrawAccountHandler struct {
 	Logger      *logrus.Logger
 	AccountRepo storage.AccountRepo

@@ -23,10 +23,10 @@ func (repo *ReservationRepository) CreateReservation(tx *sql.Tx, reservation mod
 		reservation.AccountId,
 		reservation.ServiceId,
 		reservation.OrderId,
-		reservation.TotalCost,
+		strings.Replace(reservation.TotalCost.String(), ".", ",", -1),
 		reservation.State.String(),
 		reservation.RecordTime,
-		reservation.BalanceAfter,
+		strings.Replace(reservation.BalanceAfter.String(), ".", ",", -1),
 	)
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 		reservationDto.AccountId,
 		reservationDto.ServiceId,
 		reservationDto.OrderId,
-		reservationDto.TotalCost,
+		strings.Replace(reservationDto.TotalCost.String(), ".", ",", -1),
 		state.String(),
 	).Scan(&balance)
 

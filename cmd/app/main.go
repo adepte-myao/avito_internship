@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/adepte-myao/avito_internship/internal/config"
+	"github.com/adepte-myao/avito_internship/internal/handlers"
 	"github.com/adepte-myao/avito_internship/internal/server"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/gorilla/mux"
@@ -36,9 +37,27 @@ func main() {
 		return
 	}
 
+	// Handlers initialization
+	makeReservationHandler := handlers.NewMakeReservationHandler(logger, storage)
+	acceptReservationHandler := handlers.NewAcceptReservationHandler(logger, storage)
+	cancelReservationHandler := handlers.NewCancelReservationHandler(logger, storage)
+
+	getBalanceHandler := handlers.NewGetBalanceHandler(logger, storage)
+	depositHandler := handlers.NewDepositAccountHandler(logger, storage)
+	withdrawHandler := handlers.NewWithdrawAccountHandler(logger, storage)
+
 	server := server.NewServer(&cfg, logger, router)
 
+	// Handlers registration
 	server.RegisterHandler("/ping", server.Ping)
+
+	server.RegisterHandler("/make-reservation", makeReservationHandler.Handle)
+	server.RegisterHandler("/accept-reservation", acceptReservationHandler.Handle)
+	server.RegisterHandler("/cancel-reservation", cancelReservationHandler.Handle)
+
+	server.RegisterHandler("/balance", getBalanceHandler.Handle)
+	server.RegisterHandler("/deposit", depositHandler.Handle)
+	server.RegisterHandler("/withdraw", withdrawHandler.Handle)
 
 	err = server.Start()
 	if err != nil {

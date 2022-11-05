@@ -24,6 +24,7 @@ func NewDepositAccountHandler(Logger *logrus.Logger, store *storage.Storage) *De
 	}
 }
 
+// TODO: trunc all digits after dot except two first
 func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Deposit account request received")
 

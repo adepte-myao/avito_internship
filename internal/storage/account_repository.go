@@ -56,13 +56,13 @@ func (repo *AccountRepository) IncreaseBalance(tx *sql.Tx, id int32, value decim
 
 	// decimal uses '.' to separate fractional part
 	// postgres in RUS local uses ','
-	intValue := strings.Replace(value.String(), ".", ",", -1)
+	strValue := strings.Replace(value.String(), ".", ",", -1)
 
 	_, err := tx.Exec(
 		`UPDATE accounts 
 			SET balance = balance + $1 
 			WHERE id = $2`,
-		intValue, id,
+		strValue, id,
 	)
 	return err
 }
