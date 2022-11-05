@@ -48,20 +48,7 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	}
 	defer handler.TxHelper.RollbackTransaction(tx)
 
-	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
-	if err != nil {
-		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
-			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
-
-		rw.WriteHeader(http.StatusBadRequest)
-		outErr := errors.ResponseError{
-			Reason: "reserved reservation with given params does not exist",
-		}
-		json.NewEncoder(rw).Encode(outErr)
-		return
-	}
-
-	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Accepted)
+	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Accepted)
 	if err == nil {
 		handler.Logger.Errorf("already accepted reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
 			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
@@ -82,6 +69,19 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		rw.WriteHeader(http.StatusBadRequest)
 		outErr := errors.ResponseError{
 			Reason: "given reservation was cancelled",
+		}
+		json.NewEncoder(rw).Encode(outErr)
+		return
+	}
+
+	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
+	if err != nil {
+		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
+			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "reserved reservation with given params does not exist",
 		}
 		json.NewEncoder(rw).Encode(outErr)
 		return

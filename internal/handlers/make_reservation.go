@@ -6,45 +6,51 @@ import (
 	"time"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
+	"github.com/adepte-myao/avito_internship/internal/errors"
 	"github.com/adepte-myao/avito_internship/internal/models"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/sirupsen/logrus"
 )
 
 type MakeReservationHandler struct {
-	logger          *logrus.Logger
-	accountRepo     *storage.AccountRepository
-	reservationRepo *storage.ReservationRepository
-	txHelper        *storage.TransactionHelper
+	Logger          *logrus.Logger
+	AccountRepo     storage.AccountRepo
+	ReservationRepo storage.ReservationRepo
+	TxHelper        storage.SQLTransactionHelper
 }
 
-func NewMakeReservationHandler(logger *logrus.Logger, store *storage.Storage) *MakeReservationHandler {
+func NewMakeReservationHandler(Logger *logrus.Logger, store *storage.Storage) *MakeReservationHandler {
 	return &MakeReservationHandler{
-		logger:          logger,
-		accountRepo:     storage.NewAccountRepository(),
-		reservationRepo: storage.NewReservationRepository(),
-		txHelper:        storage.NewTransactionHelper(store),
+		Logger:          Logger,
+		AccountRepo:     storage.NewAccountRepository(),
+		ReservationRepo: storage.NewReservationRepository(),
+		TxHelper:        storage.NewTransactionHelper(store),
 	}
 }
 
 func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Request) {
-	handler.logger.Info("Make reservation request received")
+	handler.Logger.Info("Make reservation request received")
 
 	var data dtos.ReservationDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		handler.logger.Error("cannot decode request body: ", err.Error())
-		// TODO: find out what part of body was not decoded, maybe get more user-friendly output
+		handler.Logger.Error("cannot decode request body: ", err.Error())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "invalid request body",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
-	tx, err := handler.txHelper.BeginTransaction()
+	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// TODO
+		// Should not be there
 		return
 	}
-	defer handler.txHelper.RollbackTransaction(tx)
+	defer handler.TxHelper.RollbackTransaction(tx)
 
-	account, err := handler.accountRepo.GetAccount(tx, data.AccountId)
+	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO
 		return
@@ -55,7 +61,7 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = handler.accountRepo.DecreaseBalance(tx, data.AccountId, data.TotalCost)
+	err = handler.AccountRepo.DecreaseBalance(tx, data.AccountId, data.TotalCost)
 	if err != nil {
 		// TODO
 		return
@@ -70,13 +76,13 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		RecordTime:   time.Now(),
 		BalanceAfter: account.Balance.Sub(data.TotalCost),
 	}
-	err = handler.reservationRepo.CreateReservation(tx, reservation)
+	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
 		// TODO
 		return
 	}
 
-	handler.txHelper.CommitTransaction(tx)
+	handler.TxHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

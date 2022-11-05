@@ -14,6 +14,7 @@ import (
 
 type CancelReservationHandler struct {
 	Logger          *logrus.Logger
+	AccountRepo     storage.AccountRepo
 	ReservationRepo storage.ReservationRepo
 	TxHelper        storage.SQLTransactionHelper
 }
@@ -21,6 +22,7 @@ type CancelReservationHandler struct {
 func NewCancelReservationHandler(Logger *logrus.Logger, store *storage.Storage) *CancelReservationHandler {
 	return &CancelReservationHandler{
 		Logger:          Logger,
+		AccountRepo:     storage.NewAccountRepository(),
 		ReservationRepo: storage.NewReservationRepository(),
 		TxHelper:        storage.NewTransactionHelper(store),
 	}
@@ -48,20 +50,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	}
 	defer handler.TxHelper.RollbackTransaction(tx)
 
-	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
-	if err != nil {
-		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
-			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
-
-		rw.WriteHeader(http.StatusBadRequest)
-		outErr := errors.ResponseError{
-			Reason: "reserved reservation with given params does not exist",
-		}
-		json.NewEncoder(rw).Encode(outErr)
-		return
-	}
-
-	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Cancelled)
+	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Cancelled)
 	if err == nil {
 		handler.Logger.Errorf("already cancelled reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
 			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
@@ -84,6 +73,25 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 			Reason: "given reservation was accepted",
 		}
 		json.NewEncoder(rw).Encode(outErr)
+		return
+	}
+
+	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
+	if err != nil {
+		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
+			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "reserved reservation with given params does not exist",
+		}
+		json.NewEncoder(rw).Encode(outErr)
+		return
+	}
+
+	err = handler.AccountRepo.IncreaseBalance(tx, reservation.AccountId, reservation.TotalCost)
+	if err != nil {
+		// TODO
 		return
 	}
 
