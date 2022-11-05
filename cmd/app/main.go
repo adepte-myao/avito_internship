@@ -31,11 +31,13 @@ func main() {
 
 	logger := logrus.New()
 	router := mux.NewRouter()
-	storage := storage.NewStorage(&cfg.Store, logger)
-	if err = storage.Open(); err != nil {
-		logger.Error(err)
+
+	db, err := storage.NewPostgresDb(&cfg.Store, logger)
+	if err != nil {
+		logger.Fatal(err)
 		return
 	}
+	repository := storage.NewSQLRepository(db)
 
 	// Handlers initialization
 	makeReservationHandler := handlers.NewMakeReservationHandler(logger, storage)

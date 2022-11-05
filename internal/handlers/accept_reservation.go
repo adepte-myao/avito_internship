@@ -18,7 +18,7 @@ type AcceptReservationHandler struct {
 	TxHelper        storage.SQLTransactionHelper
 }
 
-func NewAcceptReservationHandler(Logger *logrus.Logger, store *storage.Storage) *AcceptReservationHandler {
+func NewAcceptReservationHandler(Logger *logrus.Logger, store storage.Storage) *AcceptReservationHandler {
 	return &AcceptReservationHandler{
 		Logger:          Logger,
 		ReservationRepo: storage.NewReservationRepository(),

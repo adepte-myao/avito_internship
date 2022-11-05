@@ -10,7 +10,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type AccountRepository struct{}
+type AccountRepository struct {}
 
 func NewAccountRepository() *AccountRepository {
 	return &AccountRepository{}

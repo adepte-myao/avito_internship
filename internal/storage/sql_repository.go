@@ -27,3 +27,17 @@ type SQLTransactionHelper interface {
 	RollbackTransaction(tx *sql.Tx)
 	CommitTransaction(tx *sql.Tx)
 }
+
+type SQLRepository struct {
+	AccountRepo
+	ReservationRepo
+	SQLTransactionHelper
+}
+
+func NewSQLRepository(db *sql.DB) *SQLRepository {
+	return &SQLRepository{
+		AccountRepo:          NewAccountRepository(),
+		ReservationRepo:      NewReservationRepository(),
+		SQLTransactionHelper: NewTransactionHelper(db),
+	}
+}

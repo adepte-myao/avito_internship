@@ -3,17 +3,17 @@ package storage
 import "database/sql"
 
 type TransactionHelper struct {
-	storage *Storage
+	db *sql.DB
 }
 
-func NewTransactionHelper(storage *Storage) *TransactionHelper {
+func NewTransactionHelper(db *sql.DB) *TransactionHelper {
 	return &TransactionHelper{
-		storage: storage,
+		db: db,
 	}
 }
 
 func (helper *TransactionHelper) BeginTransaction() (*sql.Tx, error) {
-	return helper.storage.db.Begin()
+	return helper.db.Begin()
 }
 
 func (helper *TransactionHelper) RollbackTransaction(tx *sql.Tx) {
