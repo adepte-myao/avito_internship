@@ -12,16 +12,14 @@ import (
 
 // TODO: trunc all digits after dot except two first
 type WithdrawAccountHandler struct {
-	Logger      *logrus.Logger
-	AccountRepo storage.AccountRepo
-	TxHelper    storage.SQLTransactionHelper
+	Logger     *logrus.Logger
+	Repository storage.SQLRepository
 }
 
-func NewWithdrawAccountHandler(Logger *logrus.Logger, store *storage.Storage) *WithdrawAccountHandler {
+func NewWithdrawAccountHandler(Logger *logrus.Logger, repo storage.SQLRepository) *WithdrawAccountHandler {
 	return &WithdrawAccountHandler{
-		Logger:      Logger,
-		AccountRepo: storage.NewAccountRepository(),
-		TxHelper:    storage.NewTransactionHelper(store),
+		Logger:     Logger,
+		Repository: repo,
 	}
 }
 
@@ -40,14 +38,14 @@ func (handler *WithdrawAccountHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tx, err := handler.TxHelper.BeginTransaction()
+	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
 	if err != nil {
 		// Should not be here
 		return
 	}
-	defer handler.TxHelper.RollbackTransaction(tx)
+	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
 
-	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
+	account, err := handler.Repository.Account.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO
 		handler.Logger.Error("account does not exist")
@@ -71,14 +69,14 @@ func (handler *WithdrawAccountHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = handler.AccountRepo.DecreaseBalance(tx, data.AccountId, data.Value)
+	err = handler.Repository.Account.DecreaseBalance(tx, data.AccountId, data.Value)
 	if err != nil {
 		// Should not be here
 		handler.Logger.Error("decreasing balance: : ", err.Error())
 		return
 	}
 
-	handler.TxHelper.CommitTransaction(tx)
+	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

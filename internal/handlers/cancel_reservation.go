@@ -13,18 +13,14 @@ import (
 )
 
 type CancelReservationHandler struct {
-	Logger          *logrus.Logger
-	AccountRepo     storage.AccountRepo
-	ReservationRepo storage.ReservationRepo
-	TxHelper        storage.SQLTransactionHelper
+	Logger     *logrus.Logger
+	Repository storage.SQLRepository
 }
 
-func NewCancelReservationHandler(Logger *logrus.Logger, store *storage.Storage) *CancelReservationHandler {
+func NewCancelReservationHandler(Logger *logrus.Logger, repo storage.SQLRepository) *CancelReservationHandler {
 	return &CancelReservationHandler{
-		Logger:          Logger,
-		AccountRepo:     storage.NewAccountRepository(),
-		ReservationRepo: storage.NewReservationRepository(),
-		TxHelper:        storage.NewTransactionHelper(store),
+		Logger:     Logger,
+		Repository: repo,
 	}
 }
 
@@ -43,14 +39,14 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	tx, err := handler.TxHelper.BeginTransaction()
+	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
 	if err != nil {
 		// Shouldn't be here
 		return
 	}
-	defer handler.TxHelper.RollbackTransaction(tx)
+	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
 
-	reservation, err := handler.ReservationRepo.GetReservation(tx, data, models.Cancelled)
+	reservation, err := handler.Repository.Reservation.GetReservation(tx, data, models.Cancelled)
 	if err == nil {
 		handler.Logger.Errorf("already cancelled reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
 			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
@@ -63,7 +59,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Accepted)
+	reservation, err = handler.Repository.Reservation.GetReservation(tx, data, models.Accepted)
 	if err == nil {
 		handler.Logger.Errorf("accepted reservation with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s",
 			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
@@ -76,7 +72,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	reservation, err = handler.ReservationRepo.GetReservation(tx, data, models.Reserved)
+	reservation, err = handler.Repository.Reservation.GetReservation(tx, data, models.Reserved)
 	if err != nil {
 		handler.Logger.Errorf("no reserved reservations with params: accountID: %d, serviceID: %d, orderID: %d, totalCost: %s exist",
 			data.AccountId, data.ServiceId, data.OrderId, data.TotalCost.String())
@@ -89,7 +85,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	err = handler.AccountRepo.IncreaseBalance(tx, reservation.AccountId, reservation.TotalCost)
+	err = handler.Repository.Account.IncreaseBalance(tx, reservation.AccountId, reservation.TotalCost)
 	if err != nil {
 		// Shouldn't be here
 		return
@@ -97,13 +93,13 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 
 	reservation.State = models.Cancelled
 	reservation.RecordTime = time.Now()
-	err = handler.ReservationRepo.CreateReservation(tx, reservation)
+	err = handler.Repository.Reservation.CreateReservation(tx, reservation)
 	if err != nil {
 		// Shouldn't be here
 		return
 	}
 
-	handler.TxHelper.CommitTransaction(tx)
+	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

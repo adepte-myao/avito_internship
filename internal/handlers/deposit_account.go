@@ -11,16 +11,14 @@ import (
 )
 
 type DepositAccountHandler struct {
-	Logger      *logrus.Logger
-	AccountRepo storage.AccountRepo
-	TxHelper    storage.SQLTransactionHelper
+	Logger     *logrus.Logger
+	Repository storage.SQLRepository
 }
 
-func NewDepositAccountHandler(Logger *logrus.Logger, store *storage.Storage) *DepositAccountHandler {
+func NewDepositAccountHandler(Logger *logrus.Logger, repo storage.SQLRepository) *DepositAccountHandler {
 	return &DepositAccountHandler{
-		Logger:      Logger,
-		AccountRepo: storage.NewAccountRepository(),
-		TxHelper:    storage.NewTransactionHelper(store),
+		Logger:     Logger,
+		Repository: repo,
 	}
 }
 
@@ -40,17 +38,17 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 		return
 	}
 
-	tx, err := handler.TxHelper.BeginTransaction()
+	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
 	if err != nil {
 		// Should not be here
 		return
 	}
-	defer handler.TxHelper.RollbackTransaction(tx)
+	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
 
-	_, err = handler.AccountRepo.GetAccount(tx, data.AccountId)
+	_, err = handler.Repository.Account.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO: can't be other errors except no account?
-		err := handler.AccountRepo.CreateAccount(tx, data.AccountId)
+		err := handler.Repository.Account.CreateAccount(tx, data.AccountId)
 		if err != nil {
 			// Should not be here
 			handler.Logger.Error("creation account: ", err.Error())
@@ -58,14 +56,14 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 		}
 	}
 
-	err = handler.AccountRepo.IncreaseBalance(tx, data.AccountId, data.Value)
+	err = handler.Repository.Account.IncreaseBalance(tx, data.AccountId, data.Value)
 	if err != nil {
 		// Should no be here
 		handler.Logger.Error("increasing balance: : ", err.Error())
 		return
 	}
 
-	handler.TxHelper.CommitTransaction(tx)
+	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

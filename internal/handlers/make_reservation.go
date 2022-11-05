@@ -13,18 +13,14 @@ import (
 )
 
 type MakeReservationHandler struct {
-	Logger          *logrus.Logger
-	AccountRepo     storage.AccountRepo
-	ReservationRepo storage.ReservationRepo
-	TxHelper        storage.SQLTransactionHelper
+	Logger     *logrus.Logger
+	Repository storage.SQLRepository
 }
 
-func NewMakeReservationHandler(Logger *logrus.Logger, store *storage.Storage) *MakeReservationHandler {
+func NewMakeReservationHandler(Logger *logrus.Logger, repo storage.SQLRepository) *MakeReservationHandler {
 	return &MakeReservationHandler{
-		Logger:          Logger,
-		AccountRepo:     storage.NewAccountRepository(),
-		ReservationRepo: storage.NewReservationRepository(),
-		TxHelper:        storage.NewTransactionHelper(store),
+		Logger:     Logger,
+		Repository: repo,
 	}
 }
 
@@ -43,14 +39,14 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tx, err := handler.TxHelper.BeginTransaction()
+	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
 	if err != nil {
 		// Should not be here
 		return
 	}
-	defer handler.TxHelper.RollbackTransaction(tx)
+	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
 
-	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
+	account, err := handler.Repository.Account.GetAccount(tx, data.AccountId)
 	if err != nil {
 		handler.Logger.Errorf("account with ID %d does not exist", data.AccountId)
 
@@ -74,7 +70,7 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = handler.AccountRepo.DecreaseBalance(tx, data.AccountId, data.TotalCost)
+	err = handler.Repository.Account.DecreaseBalance(tx, data.AccountId, data.TotalCost)
 	if err != nil {
 		// Should not be here
 		return
@@ -89,13 +85,13 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		RecordTime:   time.Now(),
 		BalanceAfter: account.Balance.Sub(data.TotalCost),
 	}
-	err = handler.ReservationRepo.CreateReservation(tx, reservation)
+	err = handler.Repository.Reservation.CreateReservation(tx, reservation)
 	if err != nil {
 		// Should not be here
 		return
 	}
 
-	handler.TxHelper.CommitTransaction(tx)
+	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

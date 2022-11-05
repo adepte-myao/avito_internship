@@ -10,14 +10,14 @@ import (
 
 //go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
 
-type AccountRepo interface {
+type Account interface {
 	GetAccount(tx *sql.Tx, id int32) (models.Account, error)
 	CreateAccount(tx *sql.Tx, id int32) error
 	IncreaseBalance(tx *sql.Tx, id int32, value decimal.Decimal) error
 	DecreaseBalance(tx *sql.Tx, id int32, value decimal.Decimal) error
 }
 
-type ReservationRepo interface {
+type Reservation interface {
 	CreateReservation(tx *sql.Tx, reservation models.Reservation) error
 	GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error)
 }
@@ -29,15 +29,15 @@ type SQLTransactionHelper interface {
 }
 
 type SQLRepository struct {
-	AccountRepo
-	ReservationRepo
+	Account
+	Reservation
 	SQLTransactionHelper
 }
 
 func NewSQLRepository(db *sql.DB) *SQLRepository {
 	return &SQLRepository{
-		AccountRepo:          NewAccountRepository(),
-		ReservationRepo:      NewReservationRepository(),
+		Account:              NewAccountRepository(),
+		Reservation:          NewReservationRepository(),
 		SQLTransactionHelper: NewTransactionHelper(db),
 	}
 }

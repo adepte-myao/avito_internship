@@ -11,16 +11,14 @@ import (
 )
 
 type GetBalanceHandler struct {
-	Logger      *logrus.Logger
-	AccountRepo storage.AccountRepo
-	TxHelper    storage.SQLTransactionHelper
+	Logger     *logrus.Logger
+	Repository storage.SQLRepository
 }
 
-func NewGetBalanceHandler(Logger *logrus.Logger, store *storage.Storage) *GetBalanceHandler {
+func NewGetBalanceHandler(Logger *logrus.Logger, repo storage.SQLRepository) *GetBalanceHandler {
 	return &GetBalanceHandler{
-		Logger:      Logger,
-		AccountRepo: storage.NewAccountRepository(),
-		TxHelper:    storage.NewTransactionHelper(store),
+		Logger:     Logger,
+		Repository: repo,
 	}
 }
 
@@ -39,16 +37,16 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tx, err := handler.TxHelper.BeginTransaction()
+	tx, err := handler.Repository.SQLTransactionHelper.BeginTransaction()
 	if err != nil {
 		handler.Logger.Error(err.Error())
 
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer handler.TxHelper.RollbackTransaction(tx)
+	defer handler.Repository.SQLTransactionHelper.RollbackTransaction(tx)
 
-	account, err := handler.AccountRepo.GetAccount(tx, data.AccountId)
+	account, err := handler.Repository.Account.GetAccount(tx, data.AccountId)
 	if err != nil {
 		handler.Logger.Error("account with id", data.AccountId, "does not exist")
 
@@ -60,7 +58,7 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 		return
 	}
 
-	handler.TxHelper.CommitTransaction(tx)
+	handler.Repository.SQLTransactionHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusOK)
 	json.NewEncoder(rw).Encode(account)
