@@ -45,7 +45,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 
 	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// Shouldn't be there
+		// Shouldn't be here
 		return
 	}
 	defer handler.TxHelper.RollbackTransaction(tx)
@@ -91,7 +91,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 
 	err = handler.AccountRepo.IncreaseBalance(tx, reservation.AccountId, reservation.TotalCost)
 	if err != nil {
-		// TODO
+		// Shouldn't be here
 		return
 	}
 
@@ -99,7 +99,7 @@ func (handler *CancelReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	reservation.RecordTime = time.Now()
 	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
-		// Shouldn't be there
+		// Shouldn't be here
 		return
 	}
 

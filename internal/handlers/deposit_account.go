@@ -5,60 +5,66 @@ import (
 	"net/http"
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
+	"github.com/adepte-myao/avito_internship/internal/errors"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/sirupsen/logrus"
 )
 
 type DepositAccountHandler struct {
-	logger      *logrus.Logger
-	accountRepo *storage.AccountRepository
-	txHelper    *storage.TransactionHelper
+	Logger      *logrus.Logger
+	AccountRepo storage.AccountRepo
+	TxHelper    storage.SQLTransactionHelper
 }
 
-func NewDepositAccountHandler(logger *logrus.Logger, store *storage.Storage) *DepositAccountHandler {
+func NewDepositAccountHandler(Logger *logrus.Logger, store *storage.Storage) *DepositAccountHandler {
 	return &DepositAccountHandler{
-		logger:      logger,
-		accountRepo: storage.NewAccountRepository(),
-		txHelper:    storage.NewTransactionHelper(store),
+		Logger:      Logger,
+		AccountRepo: storage.NewAccountRepository(),
+		TxHelper:    storage.NewTransactionHelper(store),
 	}
 }
 
 func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Request) {
-	handler.logger.Info("Deposit account request received")
+	handler.Logger.Info("Deposit account request received")
 
 	var data dtos.DepositAccountDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		handler.logger.Error("cannot decode request body: ", err.Error())
-		// TODO: find out what part of body was not decoded, maybe get more user-friendly output
+		handler.Logger.Error("cannot decode request body: ", err.Error())
+
+		rw.WriteHeader(http.StatusBadRequest)
+		outErr := errors.ResponseError{
+			Reason: "invalid request body",
+		}
+		json.NewEncoder(rw).Encode(outErr)
 		return
 	}
 
-	tx, err := handler.txHelper.BeginTransaction()
+	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// TODO
+		// Should not be here
 		return
 	}
-	defer handler.txHelper.RollbackTransaction(tx)
+	defer handler.TxHelper.RollbackTransaction(tx)
 
-	_, err = handler.accountRepo.GetAccount(tx, data.AccountId)
+	_, err = handler.AccountRepo.GetAccount(tx, data.AccountId)
 	if err != nil {
 		// TODO: can't be other errors except no account?
-		err := handler.accountRepo.CreateAccount(tx, data.AccountId)
+		err := handler.AccountRepo.CreateAccount(tx, data.AccountId)
 		if err != nil {
 			// TODO
-			handler.logger.Error("creation account: ", err.Error())
+			handler.Logger.Error("creation account: ", err.Error())
 			return
 		}
 	}
 
-	err = handler.accountRepo.IncreaseBalance(tx, data.AccountId, data.Value)
+	err = handler.AccountRepo.IncreaseBalance(tx, data.AccountId, data.Value)
 	if err != nil {
 		// TODO
-		handler.logger.Error("increasing balance: : ", err.Error())
+		handler.Logger.Error("increasing balance: : ", err.Error())
 		return
 	}
 
-	handler.txHelper.CommitTransaction(tx)
+	handler.TxHelper.CommitTransaction(tx)
 
 	rw.WriteHeader(http.StatusNoContent)
 }

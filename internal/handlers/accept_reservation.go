@@ -43,7 +43,7 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 
 	tx, err := handler.TxHelper.BeginTransaction()
 	if err != nil {
-		// Shouldn't be there
+		// Shouldn't be here
 		return
 	}
 	defer handler.TxHelper.RollbackTransaction(tx)
@@ -91,7 +91,7 @@ func (handler *AcceptReservationHandler) Handle(rw http.ResponseWriter, r *http.
 	reservation.RecordTime = time.Now()
 	err = handler.ReservationRepo.CreateReservation(tx, reservation)
 	if err != nil {
-		// Shouldn't be there
+		// Shouldn't be here
 		return
 	}
 	handler.TxHelper.CommitTransaction(tx)
