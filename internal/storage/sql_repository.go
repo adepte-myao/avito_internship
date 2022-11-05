@@ -8,7 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
+//go:generate mockgen -source=sql_repository.go -destination=mock_storage/mock.go
 
 type Account interface {
 	GetAccount(tx *sql.Tx, id int32) (models.Account, error)

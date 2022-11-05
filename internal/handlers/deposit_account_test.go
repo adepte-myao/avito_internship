@@ -87,8 +87,6 @@ func TestDepositAccountHandler(t *testing.T) {
 
 			handler := handlers.DepositAccountHandler{
 				Logger:      logger,
-				AccountRepo: accRepo,
-				TxHelper:    txHelper,
 			}
 
 			req, err := http.NewRequest("POST", "/deposit-account",

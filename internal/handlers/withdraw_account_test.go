@@ -86,9 +86,6 @@ func TestWithdrawAccountHandler(t *testing.T) {
 
 			tx := &sql.Tx{}
 
-			accRepo := mock_storage.NewMockAccountRepo(ctrl)
-			testCase.accRepoBehavior(accRepo, tx, 1, decimal.NewFromInt(100))
-
 			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
 			testCase.txHelperBehavior(txHelper, tx)
 
@@ -97,8 +94,6 @@ func TestWithdrawAccountHandler(t *testing.T) {
 
 			handler := handlers.WithdrawAccountHandler{
 				Logger:      logger,
-				AccountRepo: accRepo,
-				TxHelper:    txHelper,
 			}
 
 			req, err := http.NewRequest("POST", "/withdraw-account",

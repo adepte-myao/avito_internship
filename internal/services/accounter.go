@@ -9,80 +9,82 @@ import (
 )
 
 type Accounter struct {
-	repo *storage.SQLRepository
+	Account  storage.Account
+	TxHelper storage.SQLTransactionHelper
 }
 
 func NewAccounter(repo *storage.SQLRepository) *Accounter {
 	return &Accounter{
-		repo: repo,
+		Account:  repo.Account,
+		TxHelper: repo.SQLTransactionHelper,
 	}
 }
 
 func (serv *Accounter) GetBalance(dto dtos.GetBalanceDto) (models.Account, error) {
-	tx, err := serv.repo.SQLTransactionHelper.BeginTransaction()
+	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return models.Account{}, err
 	}
-	defer serv.repo.SQLTransactionHelper.RollbackTransaction(tx)
+	defer serv.TxHelper.RollbackTransaction(tx)
 
-	account, err := serv.repo.Account.GetAccount(tx, dto.AccountId)
+	Account, err := serv.Account.GetAccount(tx, dto.AccountId)
 	if err != nil {
-		return models.Account{}, errors.New("account with given ID does not exist")
+		return models.Account{}, errors.New("Account with given ID does not exist")
 	}
 
-	serv.repo.SQLTransactionHelper.CommitTransaction(tx)
+	serv.TxHelper.CommitTransaction(tx)
 
-	return account, nil
+	return Account, nil
 }
 
 func (serv *Accounter) Deposit(depDto dtos.DepositAccountDto) error {
-	tx, err := serv.repo.SQLTransactionHelper.BeginTransaction()
+	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return err
 	}
-	defer serv.repo.SQLTransactionHelper.RollbackTransaction(tx)
+	defer serv.TxHelper.RollbackTransaction(tx)
 
-	_, err = serv.repo.Account.GetAccount(tx, depDto.AccountId)
+	_, err = serv.Account.GetAccount(tx, depDto.AccountId)
 	if err != nil {
-		// TODO: can't be other errors except no account?
-		err := serv.repo.Account.CreateAccount(tx, depDto.AccountId)
+		// TODO: can't be other errors except no Account?
+		err := serv.Account.CreateAccount(tx, depDto.AccountId)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = serv.repo.Account.IncreaseBalance(tx, depDto.AccountId, depDto.Value)
+	err = serv.Account.IncreaseBalance(tx, depDto.AccountId, depDto.Value)
 	if err != nil {
 		return err
 	}
 
-	serv.repo.SQLTransactionHelper.CommitTransaction(tx)
+	serv.TxHelper.CommitTransaction(tx)
 
 	return nil
 }
 
 func (serv *Accounter) Withdraw(wdDto dtos.WithdrawAccountDto) error {
-	tx, err := serv.repo.SQLTransactionHelper.BeginTransaction()
+	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return err
 	}
-	defer serv.repo.SQLTransactionHelper.RollbackTransaction(tx)
+	defer serv.TxHelper.RollbackTransaction(tx)
 
-	account, err := serv.repo.Account.GetAccount(tx, wdDto.AccountId)
+	Account, err := serv.Account.GetAccount(tx, wdDto.AccountId)
 	if err != nil {
-		return errors.New("account does not exist")
+		return errors.New("Account does not exist")
 	}
 
-	if account.Balance.LessThan(wdDto.Value) {
+	if Account.Balance.LessThan(wdDto.Value) {
 		return errors.New("not enough money")
 	}
 
-	err = serv.repo.Account.DecreaseBalance(tx, wdDto.AccountId, wdDto.Value)
+	err = serv.Account.DecreaseBalance(tx, wdDto.AccountId, wdDto.Value)
 	if err != nil {
 		return err
 	}
 
-	serv.repo.SQLTransactionHelper.CommitTransaction(tx)
+	serv.TxHelper.CommitTransaction(tx)
 
 	return nil
 }

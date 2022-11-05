@@ -134,8 +134,6 @@ func TestAcceptReservationHandler(t *testing.T) {
 
 			handler := handlers.AcceptReservationHandler{
 				Logger:          logger,
-				ReservationRepo: reservationRepo,
-				TxHelper:        txHelper,
 			}
 
 			req, err := http.NewRequest("POST", "/accept-reservation",

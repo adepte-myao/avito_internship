@@ -106,8 +106,6 @@ func TestGetBalanceHandler(t *testing.T) {
 
 			handler := handlers.GetBalanceHandler{
 				Logger:      logger,
-				AccountRepo: accRepo,
-				TxHelper:    txHelper,
 			}
 
 			req, err := http.NewRequest("GET", "/get-balance",
