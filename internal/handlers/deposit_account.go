@@ -29,12 +29,8 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 	var data dtos.DepositAccountDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		handler.Logger.Error("cannot decode request body: ", err.Error())
-
 		rw.WriteHeader(http.StatusBadRequest)
-		outErr := errors.ResponseError{
-			Reason: "invalid request body",
-		}
-		json.NewEncoder(rw).Encode(outErr)
+		writeErrorToResponse(errors.NewErrorInvalidRequestBody(""), rw)
 		return
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/adepte-myao/avito_internship/internal/config"
 	"github.com/adepte-myao/avito_internship/internal/handlers"
 	"github.com/adepte-myao/avito_internship/internal/server"
+	"github.com/adepte-myao/avito_internship/internal/services"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -38,15 +39,16 @@ func main() {
 		return
 	}
 	repository := storage.NewSQLRepository(db)
+	service := services.NewService(repository)
 
 	// Handlers initialization
-	makeReservationHandler := handlers.NewMakeReservationHandler(logger, *repository)
-	acceptReservationHandler := handlers.NewAcceptReservationHandler(logger, *repository)
-	cancelReservationHandler := handlers.NewCancelReservationHandler(logger, *repository)
+	makeReservationHandler := handlers.NewMakeReservationHandler(logger, service)
+	acceptReservationHandler := handlers.NewAcceptReservationHandler(logger, service)
+	cancelReservationHandler := handlers.NewCancelReservationHandler(logger, service)
 
-	getBalanceHandler := handlers.NewGetBalanceHandler(logger, *repository)
-	depositHandler := handlers.NewDepositAccountHandler(logger, *repository)
-	withdrawHandler := handlers.NewWithdrawAccountHandler(logger, *repository)
+	getBalanceHandler := handlers.NewGetBalanceHandler(logger, service)
+	depositHandler := handlers.NewDepositAccountHandler(logger, service)
+	withdrawHandler := handlers.NewWithdrawAccountHandler(logger, service)
 
 	server := server.NewServer(&cfg, logger, router)
 

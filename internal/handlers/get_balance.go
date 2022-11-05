@@ -28,12 +28,8 @@ func (handler *GetBalanceHandler) Handle(rw http.ResponseWriter, r *http.Request
 	var data dtos.GetBalanceDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		handler.Logger.Error("cannot decode request body: ", err.Error())
-
 		rw.WriteHeader(http.StatusBadRequest)
-		outError := errors.ResponseError{
-			Reason: "invalid request body",
-		}
-		json.NewEncoder(rw).Encode(outError)
+		writeErrorToResponse(errors.NewErrorInvalidRequestBody(""), rw)
 		return
 	}
 
