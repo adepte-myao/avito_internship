@@ -243,8 +243,8 @@ func TestReservationer_CancelReservation(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:     "Fail reservation was canceled",
-			inputDto: dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
+			name:                "Fail reservation was canceled",
+			inputDto:            dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
 			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, accountId int32, value decimal.Decimal) {},
 			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservation, tx *sql.Tx) {
 				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dtos.ReservationDto{}), models.Cancelled).
@@ -257,8 +257,8 @@ func TestReservationer_CancelReservation(t *testing.T) {
 			expectedError: errors.New("given reservation is already cancelled"),
 		},
 		{
-			name:     "Fail reservation was accepted",
-			inputDto: dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
+			name:                "Fail reservation was accepted",
+			inputDto:            dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
 			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, accountId int32, value decimal.Decimal) {},
 			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservation, tx *sql.Tx) {
 				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dtos.ReservationDto{}), models.Cancelled).
@@ -273,8 +273,8 @@ func TestReservationer_CancelReservation(t *testing.T) {
 			expectedError: errors.New("given reservation was accepted"),
 		},
 		{
-			name:     "Fail reserved reservation does not exist",
-			inputDto: dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
+			name:                "Fail reserved reservation does not exist",
+			inputDto:            dtos.ReservationDto{AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)},
 			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, accountId int32, value decimal.Decimal) {},
 			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservation, tx *sql.Tx) {
 				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dtos.ReservationDto{}), models.Accepted).
