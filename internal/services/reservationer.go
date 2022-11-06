@@ -129,6 +129,7 @@ func (serv *Reservationer) CancelReservation(resDto dtos.ReservationDto) error {
 
 	reservation.State = models.Cancelled
 	reservation.RecordTime = time.Now()
+	reservation.BalanceAfter = reservation.BalanceAfter.Add(resDto.TotalCost)
 	err = serv.Reservation.CreateReservation(tx, reservation)
 	if err != nil {
 		return err
