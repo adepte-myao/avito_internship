@@ -96,12 +96,17 @@ func (serv *Accounter) InternalTransfer(senderId int32, recId int32, value decim
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
-	account, err := serv.Account.GetAccount(tx, senderId)
+	senderAccount, err := serv.Account.GetAccount(tx, senderId)
 	if err != nil {
 		return errors.New("sender account does not exist")
 	}
 
-	if account.Balance.LessThan(value) {
+	_, err = serv.Account.GetAccount(tx, recId)
+	if err != nil {
+		return errors.New("receiver account does not exist")
+	}
+
+	if senderAccount.Balance.LessThan(value) {
 		return errors.New("not enough money")
 	}
 

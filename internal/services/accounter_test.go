@@ -280,6 +280,9 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
 					models.Account{ID: senderId, Balance: decimal.NewFromInt(100)}, nil,
 				)
+				accountRepo.EXPECT().GetAccount(tx, recId).Return(
+					models.Account{ID: recId, Balance: decimal.NewFromInt(0)}, nil,
+				)
 				accountRepo.EXPECT().DecreaseBalance(tx, senderId, value).Return(nil)
 				accountRepo.EXPECT().IncreaseBalance(tx, recId, value).Return(nil)
 			},
@@ -307,6 +310,25 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 			expectedError: errors.New("sender account does not exist"),
 		},
 		{
+			name:     "Receiver account does not exist",
+			senderId: 1,
+			recId:    2,
+			value:    decimal.NewFromInt(100),
+			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
+					models.Account{}, nil,
+				)
+				accountRepo.EXPECT().GetAccount(tx, recId).Return(
+					models.Account{}, errors.New("not nil"),
+				)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expectedError: errors.New("receiver account does not exist"),
+		},
+		{
 			name:     "Sender account does not have enough money",
 			senderId: 1,
 			recId:    2,
@@ -314,6 +336,9 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
 				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
 					models.Account{ID: senderId, Balance: decimal.NewFromInt(99)}, nil,
+				)
+				accountRepo.EXPECT().GetAccount(tx, recId).Return(
+					models.Account{ID: recId, Balance: decimal.NewFromInt(0)}, nil,
 				)
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
