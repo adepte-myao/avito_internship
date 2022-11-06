@@ -9,7 +9,7 @@ import (
 )
 
 func (handler *Handler) acceptReservation(rw http.ResponseWriter, r *http.Request) {
-	handler.Logger.Info("Make reservation request received")
+	handler.Logger.Info("Accept reservation request received")
 
 	var data dtos.ReservationDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {

@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"bytes"
-	"database/sql"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -10,8 +9,7 @@ import (
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/handlers"
-	"github.com/adepte-myao/avito_internship/internal/models"
-	"github.com/adepte-myao/avito_internship/internal/storage/mock_storage"
+	mock_services "github.com/adepte-myao/avito_internship/internal/services/mock_service"
 	"github.com/golang/mock/gomock"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -19,110 +17,41 @@ import (
 )
 
 func TestCancelReservationHandler(t *testing.T) {
-	type accRepoBehavior func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal)
-	type reservationRepoBehavior func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-		dto dtos.ReservationDto, reservation models.Reservation)
-	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
+	type reservationServBehavior func(reservationServ *mock_services.MockReservation, dto dtos.ReservationDto)
 
 	testCases := []struct {
 		name                    string
 		inputBody               string
-		accRepoBehavior         accRepoBehavior
-		reservationRepoBehavior reservationRepoBehavior
-		txHelperBehavior        txHelperBehavior
+		reservationServBehavior reservationServBehavior
 		expextedStatusCode      int
 		expectedResponseBody    string
 	}{
 		{
 			name:      "Success",
 			inputBody: `{"accountId":1,"serviceId":1,"orderId":1,"totalCost":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {
-				accRepo.EXPECT().IncreaseBalance(tx, accId, totalCost).Return(nil)
-			},
-			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-				dto dtos.ReservationDto, reservation models.Reservation) {
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Reserved).
-					Return(models.Reservation{
-						AccountId: 1, TotalCost: decimal.NewFromInt(100), State: models.Reserved},
-						nil)
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Cancelled).
-					Return(models.Reservation{}, errors.New("not nil error"))
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Accepted).
-					Return(models.Reservation{}, errors.New("not nil error"))
-				reservationRepo.EXPECT().CreateReservation(tx, gomock.AssignableToTypeOf(reservation)).Return(nil)
-			},
-			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
-				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
-				txHelper.EXPECT().CommitTransaction(tx).Return()
-				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			reservationServBehavior: func(reservationServ *mock_services.MockReservation, dto dtos.ReservationDto) {
+				reservationServ.EXPECT().CancelReservation(gomock.AssignableToTypeOf(dtos.ReservationDto{})).
+					Return(nil)
 			},
 			expextedStatusCode:   204,
 			expectedResponseBody: "",
 		},
 		{
-			name:            "Invalid request body",
-			inputBody:       `{"accountId":"1","serviceId":1,"orderId":1,"totalCost":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {},
-			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-				dto dtos.ReservationDto, reservation models.Reservation) {
-			},
-			txHelperBehavior:     func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {},
-			expextedStatusCode:   400,
-			expectedResponseBody: "{\"reason\":\"invalid request body\"}\n",
+			name:                    "Invalid request body",
+			inputBody:               `{"accountId":"1","serviceId":1,"orderId":1,"totalCost":"100.00"}`,
+			reservationServBehavior: func(reservationServ *mock_services.MockReservation, dto dtos.ReservationDto) {},
+			expextedStatusCode:      400,
+			expectedResponseBody:    "{\"reason\":\"invalid request body\"}\n",
 		},
 		{
-			name:            "Reservation does not exist",
-			inputBody:       `{"accountId":1,"serviceId":1,"orderId":1,"totalCost":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {},
-			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-				dto dtos.ReservationDto, reservation models.Reservation) {
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Cancelled).
-					Return(models.Reservation{}, errors.New("not nil error"))
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Accepted).
-					Return(models.Reservation{}, errors.New("not nil error"))
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Reserved).
-					Return(models.Reservation{}, errors.New("not nil error"))
-			},
-			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
-				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
-				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			name:      "Error in reservation service is not changed",
+			inputBody: `{"accountId":1,"serviceId":1,"orderId":1,"totalCost":"100.00"}`,
+			reservationServBehavior: func(reservationServ *mock_services.MockReservation, dto dtos.ReservationDto) {
+				reservationServ.EXPECT().CancelReservation(gomock.AssignableToTypeOf(dtos.ReservationDto{})).
+					Return(errors.New("bla-bla-bla"))
 			},
 			expextedStatusCode:   400,
-			expectedResponseBody: "{\"reason\":\"reserved reservation with given params does not exist\"}\n",
-		},
-		{
-			name:            "Reservation already accepted",
-			inputBody:       `{"accountId":1,"serviceId":1,"orderId":1,"totalCost":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {},
-			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-				dto dtos.ReservationDto, reservation models.Reservation) {
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Cancelled).
-					Return(models.Reservation{}, errors.New("not nil"))
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Accepted).
-					Return(models.Reservation{}, nil)
-			},
-			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
-				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
-				txHelper.EXPECT().RollbackTransaction(tx).Return()
-			},
-			expextedStatusCode:   400,
-			expectedResponseBody: "{\"reason\":\"given reservation was accepted\"}\n",
-		},
-		{
-			name:            "Reservation was cancelled",
-			inputBody:       `{"accountId":1,"serviceId":1,"orderId":1,"totalCost":"100.00"}`,
-			accRepoBehavior: func(accRepo *mock_storage.MockAccountRepo, tx *sql.Tx, accId int32, totalCost decimal.Decimal) {},
-			reservationRepoBehavior: func(reservationRepo *mock_storage.MockReservationRepo, tx *sql.Tx,
-				dto dtos.ReservationDto, reservation models.Reservation) {
-				reservationRepo.EXPECT().GetReservation(tx, gomock.AssignableToTypeOf(dto), models.Cancelled).
-					Return(models.Reservation{}, nil)
-			},
-			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
-				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
-				txHelper.EXPECT().RollbackTransaction(tx).Return()
-			},
-			expextedStatusCode:   400,
-			expectedResponseBody: "{\"reason\":\"given reservation is already cancelled\"}\n",
+			expectedResponseBody: "{\"reason\":\"bla-bla-bla\"}\n",
 		},
 	}
 
@@ -130,32 +59,25 @@ func TestCancelReservationHandler(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			tx := &sql.Tx{}
-			// Dont't need specific values here because in calls we just check types
-			dto := dtos.ReservationDto{}
-			reservation := models.Reservation{}
-
-			accRepo := mock_storage.NewMockAccountRepo(ctrl)
-			testCase.accRepoBehavior(accRepo, tx, 1, decimal.NewFromInt(100))
-
-			reservationRepo := mock_storage.NewMockReservationRepo(ctrl)
-			testCase.reservationRepoBehavior(reservationRepo, tx, dto, reservation)
-
-			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
-			testCase.txHelperBehavior(txHelper, tx)
+			resServ := mock_services.NewMockReservation(ctrl)
+			testCase.reservationServBehavior(resServ, dtos.ReservationDto{
+				AccountId: 1, ServiceId: 1, OrderId: 1, TotalCost: decimal.NewFromInt(100)})
 
 			logger := logrus.New()
 			logger.Level = logrus.FatalLevel
 
-			handler := handlers.CancelReservationHandler{
-				Logger:          logger,
+			handler := handlers.Handler{
+				Logger:      logger,
+				Reservation: resServ,
 			}
+			router := handler.InitRoutes()
 
-			req, err := http.NewRequest("POST", "/accept-reservation",
+			req, err := http.NewRequest("POST", "/reservation/cancel",
 				bytes.NewBufferString(testCase.inputBody))
 			assert.NoError(t, err)
 			rw := httptest.NewRecorder()
-			handler.Handle(rw, req)
+
+			router.ServeHTTP(rw, req)
 
 			assert.Equal(t, testCase.expextedStatusCode, rw.Code)
 			assert.Equal(t, testCase.expectedResponseBody, rw.Body.String())
