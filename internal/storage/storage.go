@@ -44,7 +44,7 @@ func NewSQLRepository(db *sql.DB) *SQLRepository {
 	return &SQLRepository{
 		Account:              NewAccountRepository(),
 		Reservation:          NewReservationRepository(),
-		Transfer:             NewTransferer(),
+		Transfer:             NewTransferRepository(),
 		SQLTransactionHelper: NewTransactionHelper(db),
 	}
 }

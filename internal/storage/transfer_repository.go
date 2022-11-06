@@ -9,13 +9,13 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Transferer struct{}
+type TransferRepository struct{}
 
-func NewTransferer() *Transferer {
-	return &Transferer{}
+func NewTransferRepository() *TransferRepository {
+	return &TransferRepository{}
 }
 
-func (repo *Transferer) RecordExternalTransfer(tx *sql.Tx, accId int32, ttype models.TransferType, amount decimal.Decimal) error {
+func (repo *TransferRepository) RecordExternalTransfer(tx *sql.Tx, accId int32, ttype models.TransferType, amount decimal.Decimal) error {
 	_, err := tx.Exec(
 		`INSERT INTO external_transfers_history (account_id, transfer_type, amount, record_time)
 			VALUES ($1, $2, $3, $4)`,
@@ -31,7 +31,7 @@ func (repo *Transferer) RecordExternalTransfer(tx *sql.Tx, accId int32, ttype mo
 	return nil
 }
 
-func (repo *Transferer) RecordInternalTransfer(tx *sql.Tx, senderId int32, recId int32, amount decimal.Decimal) error {
+func (repo *TransferRepository) RecordInternalTransfer(tx *sql.Tx, senderId int32, recId int32, amount decimal.Decimal) error {
 	_, err := tx.Exec(
 		`INSERT INTO internal_transfers_history (sender_id, receiver_id, amount, record_time)
 			VALUES ($1, $2, $3, $4)`,

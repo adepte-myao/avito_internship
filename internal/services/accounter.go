@@ -10,12 +10,14 @@ import (
 
 type Accounter struct {
 	Account  storage.Account
+	Transfer storage.Transfer
 	TxHelper storage.SQLTransactionHelper
 }
 
 func NewAccounter(repo *storage.SQLRepository) *Accounter {
 	return &Accounter{
 		Account:  repo.Account,
+		Transfer: repo.Transfer,
 		TxHelper: repo.SQLTransactionHelper,
 	}
 }
@@ -58,6 +60,11 @@ func (serv *Accounter) Deposit(accountId int32, value decimal.Decimal) error {
 		return err
 	}
 
+	err = serv.Transfer.RecordExternalTransfer(tx, accountId, models.Deposit, value)
+	if err != nil {
+		return err
+	}
+
 	serv.TxHelper.CommitTransaction(tx)
 
 	return nil
@@ -80,6 +87,11 @@ func (serv *Accounter) Withdraw(accountId int32, value decimal.Decimal) error {
 	}
 
 	err = serv.Account.DecreaseBalance(tx, accountId, value)
+	if err != nil {
+		return err
+	}
+
+	err = serv.Transfer.RecordExternalTransfer(tx, accountId, models.Withdraw, value)
 	if err != nil {
 		return err
 	}
@@ -116,6 +128,11 @@ func (serv *Accounter) InternalTransfer(senderId int32, recId int32, value decim
 	}
 
 	err = serv.Account.IncreaseBalance(tx, recId, value)
+	if err != nil {
+		return err
+	}
+
+	err = serv.Transfer.RecordInternalTransfer(tx, senderId, recId, value)
 	if err != nil {
 		return err
 	}

@@ -104,15 +104,17 @@ func TestAccounter_GetBalance(t *testing.T) {
 
 func TestAccounter_Deposit(t *testing.T) {
 	type accountRepoBehavior func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, accountId int32, value decimal.Decimal)
+	type transferRepoBehavior func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal)
 	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
 
 	testCases := []struct {
-		name                string
-		inputAccountId      int32
-		inputValue          decimal.Decimal
-		accountRepoBehavior accountRepoBehavior
-		txHelperBehavior    txHelperBehavior
-		expectedError       error
+		name                 string
+		inputAccountId       int32
+		inputValue           decimal.Decimal
+		accountRepoBehavior  accountRepoBehavior
+		transferRepoBehavior transferRepoBehavior
+		txHelperBehavior     txHelperBehavior
+		expectedError        error
 	}{
 		{
 			name:           "Success account does not exist",
@@ -124,6 +126,9 @@ func TestAccounter_Deposit(t *testing.T) {
 				)
 				accountRepo.EXPECT().CreateAccount(tx, accountId).Return(nil)
 				accountRepo.EXPECT().IncreaseBalance(tx, accountId, value).Return(nil)
+			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal) {
+				transferRepo.EXPECT().RecordExternalTransfer(tx, accountId, models.Deposit, value).Return(nil)
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
@@ -142,6 +147,9 @@ func TestAccounter_Deposit(t *testing.T) {
 				)
 				accountRepo.EXPECT().IncreaseBalance(tx, accountId, value).Return(nil)
 			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal) {
+				transferRepo.EXPECT().RecordExternalTransfer(tx, accountId, models.Deposit, value).Return(nil)
+			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
 				txHelper.EXPECT().CommitTransaction(tx).Return()
@@ -160,11 +168,15 @@ func TestAccounter_Deposit(t *testing.T) {
 			accRepo := mock_storage.NewMockAccount(ctrl)
 			testCase.accountRepoBehavior(accRepo, tx, testCase.inputAccountId, testCase.inputValue)
 
+			transferRepo := mock_storage.NewMockTransfer(ctrl)
+			testCase.transferRepoBehavior(transferRepo, tx, testCase.inputAccountId, testCase.inputValue)
+
 			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
 			testCase.txHelperBehavior(txHelper, tx)
 
 			accounter := services.Accounter{
 				Account:  accRepo,
+				Transfer: transferRepo,
 				TxHelper: txHelper,
 			}
 
@@ -176,15 +188,17 @@ func TestAccounter_Deposit(t *testing.T) {
 
 func TestAccounter_Withdraw(t *testing.T) {
 	type accountRepoBehavior func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, accountId int32, value decimal.Decimal)
+	type transferRepoBehavior func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal)
 	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
 
 	testCases := []struct {
-		name                string
-		inputAccountId      int32
-		inputValue          decimal.Decimal
-		accountRepoBehavior accountRepoBehavior
-		txHelperBehavior    txHelperBehavior
-		expectedError       error
+		name                 string
+		inputAccountId       int32
+		inputValue           decimal.Decimal
+		accountRepoBehavior  accountRepoBehavior
+		transferRepoBehavior transferRepoBehavior
+		txHelperBehavior     txHelperBehavior
+		expectedError        error
 	}{
 		{
 			name:           "Success",
@@ -195,6 +209,9 @@ func TestAccounter_Withdraw(t *testing.T) {
 					models.Account{ID: accountId, Balance: decimal.NewFromInt(100)}, nil,
 				)
 				accountRepo.EXPECT().DecreaseBalance(tx, accountId, value).Return(nil)
+			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal) {
+				transferRepo.EXPECT().RecordExternalTransfer(tx, accountId, models.Withdraw, value).Return(nil)
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
@@ -212,6 +229,7 @@ func TestAccounter_Withdraw(t *testing.T) {
 					models.Account{}, errors.New("not nil"),
 				)
 			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal) {},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
 				txHelper.EXPECT().RollbackTransaction(tx).Return()
@@ -227,6 +245,7 @@ func TestAccounter_Withdraw(t *testing.T) {
 					models.Account{ID: accountId, Balance: decimal.NewFromInt(99)}, nil,
 				)
 			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, accountId int32, value decimal.Decimal) {},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
 				txHelper.EXPECT().RollbackTransaction(tx).Return()
@@ -244,11 +263,15 @@ func TestAccounter_Withdraw(t *testing.T) {
 			accRepo := mock_storage.NewMockAccount(ctrl)
 			testCase.accountRepoBehavior(accRepo, tx, testCase.inputAccountId, testCase.inputValue)
 
+			transferRepo := mock_storage.NewMockTransfer(ctrl)
+			testCase.transferRepoBehavior(transferRepo, tx, testCase.inputAccountId, testCase.inputValue)
+
 			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
 			testCase.txHelperBehavior(txHelper, tx)
 
 			accounter := services.Accounter{
 				Account:  accRepo,
+				Transfer: transferRepo,
 				TxHelper: txHelper,
 			}
 
@@ -260,16 +283,18 @@ func TestAccounter_Withdraw(t *testing.T) {
 
 func TestAccounter_InternalTransfer(t *testing.T) {
 	type accountRepoBehavior func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal)
+	type transferRepoBehavior func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal)
 	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
 
 	testCases := []struct {
-		name                string
-		senderId            int32
-		recId               int32
-		value               decimal.Decimal
-		accountRepoBehavior accountRepoBehavior
-		txHelperBehavior    txHelperBehavior
-		expectedError       error
+		name                 string
+		senderId             int32
+		recId                int32
+		value                decimal.Decimal
+		accountRepoBehavior  accountRepoBehavior
+		transferRepoBehavior transferRepoBehavior
+		txHelperBehavior     txHelperBehavior
+		expectedError        error
 	}{
 		{
 			name:     "Success",
@@ -285,6 +310,9 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 				)
 				accountRepo.EXPECT().DecreaseBalance(tx, senderId, value).Return(nil)
 				accountRepo.EXPECT().IncreaseBalance(tx, recId, value).Return(nil)
+			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+				transferRepo.EXPECT().RecordInternalTransfer(tx, senderId, recId, value).Return(nil)
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
@@ -302,6 +330,8 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
 					models.Account{}, errors.New("not nil"),
 				)
+			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
 			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
@@ -322,6 +352,8 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 					models.Account{}, errors.New("not nil"),
 				)
 			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
 				txHelper.EXPECT().RollbackTransaction(tx).Return()
@@ -341,6 +373,8 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 					models.Account{ID: recId, Balance: decimal.NewFromInt(0)}, nil,
 				)
 			},
+			transferRepoBehavior: func(transferRepo *mock_storage.MockTransfer, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+			},
 			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
 				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
 				txHelper.EXPECT().RollbackTransaction(tx).Return()
@@ -358,11 +392,15 @@ func TestAccounter_InternalTransfer(t *testing.T) {
 			accRepo := mock_storage.NewMockAccount(ctrl)
 			testCase.accountRepoBehavior(accRepo, tx, testCase.senderId, testCase.recId, testCase.value)
 
+			transferRepo := mock_storage.NewMockTransfer(ctrl)
+			testCase.transferRepoBehavior(transferRepo, tx, testCase.senderId, testCase.recId, testCase.value)
+
 			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
 			testCase.txHelperBehavior(txHelper, tx)
 
 			accounter := services.Accounter{
 				Account:  accRepo,
+				Transfer: transferRepo,
 				TxHelper: txHelper,
 			}
 
