@@ -18,7 +18,7 @@ func NewReservationRepository() *ReservationRepository {
 
 func (repo *ReservationRepository) CreateReservation(tx *sql.Tx, reservation models.Reservation) error {
 	_, err := tx.Exec(
-		`INSERT INTO reserves_history (accountID, serviceID, orderID, totalCost, state, record_time, balanceAfter)
+		`INSERT INTO reserves_history (account_id, service_id, order_id, total_cost, state, record_time, balance_after)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		reservation.AccountId,
 		reservation.ServiceId,
@@ -44,8 +44,8 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 	}
 	var balance string
 	err := tx.QueryRow(
-		`SELECT balanceAfter FROM reserves_history
-			WHERE accountID = $1 AND serviceID = $2 AND orderID = $3 AND totalCost = $4 AND state = $5`,
+		`SELECT balance_after FROM reserves_history
+			WHERE account_id = $1 AND service_id = $2 AND order_id = $3 AND total_cost = $4 AND state = $5`,
 		reservationDto.AccountId,
 		reservationDto.ServiceId,
 		reservationDto.OrderId,

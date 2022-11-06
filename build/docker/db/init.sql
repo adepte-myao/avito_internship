@@ -7,24 +7,29 @@ CREATE TABLE IF NOT EXISTS services (id SERIAL PRIMARY KEY, name TEXT);
 CREATE TYPE reserve_state AS ENUM ('reserved', 'cancelled', 'accepted');
 CREATE TABLE IF NOT EXISTS reserves_history (
     id BIGSERIAL PRIMARY KEY,
-    accountID INTEGER REFERENCES accounts (id) NOT NULL,
-    serviceID INTEGER REFERENCES services (id) NOT NULL,
-    orderID BIGINT NOT NULL,
-    totalCost MONEY NOT NULL,
+    account_id INTEGER REFERENCES accounts (id) NOT NULL,
+    service_id INTEGER REFERENCES services (id) NOT NULL,
+    order_id BIGINT NOT NULL,
+    total_cost MONEY NOT NULL,
     state reserve_state NOT NULL,
     record_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    balanceAfter MONEY NOT NULL,
-    CONSTRAINT unique_rule_reserves_history UNIQUE (accountid, serviceid, orderid, state)
+    balance_after MONEY NOT NULL,
+    CONSTRAINT unique_rule_reserves_history UNIQUE (account_id, service_id, order_id, state)
+);
+CREATE TABLE IF NOT EXISTS internal_transfers_history (
+    id BIGSERIAL PRIMARY KEY,
+    sender_id INTEGER REFERENCES accounts (id) NOT NULL,
+    receiver_id INTEGER REFERENCES accounts (id) NOT NULL,
+    amount MONEY NOT NULL,
+    record_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 CREATE TYPE transfer_type AS ENUM ('deposit', 'withdraw');
-CREATE TABLE IF NOT EXISTS custom_transfers_history (
+CREATE TABLE IF NOT EXISTS external_transfers_history (
     id BIGSERIAL PRIMARY KEY,
-    accountID INTEGER REFERENCES accounts (id) NOT NULL,
-    otherAccountID INTEGER REFERENCES accounts (id) DEFAULT NULL,
-    transferType transfer_type NOT NULL,
+    account_id INTEGER REFERENCES accounts (id) NOT NULL,
+    transfer_type transfer_type NOT NULL,
     amount MONEY NOT NULL,
-    record_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    balanceAfter MONEY NOT NULL
+    record_time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 INSERT INTO services (id, name)
 SELECT series.series,

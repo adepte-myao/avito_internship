@@ -22,6 +22,11 @@ type Reservation interface {
 	GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error)
 }
 
+type Transfer interface {
+	RecordExternalTransfer(tx *sql.Tx, accId int32, ttype models.TransferType, amount decimal.Decimal) error
+	RecordInternalTransfer(tx *sql.Tx, senderId int32, recId int32, amount decimal.Decimal) error
+}
+
 type SQLTransactionHelper interface {
 	BeginTransaction() (*sql.Tx, error)
 	RollbackTransaction(tx *sql.Tx)
@@ -31,6 +36,7 @@ type SQLTransactionHelper interface {
 type SQLRepository struct {
 	Account
 	Reservation
+	Transfer
 	SQLTransactionHelper
 }
 
@@ -38,6 +44,7 @@ func NewSQLRepository(db *sql.DB) *SQLRepository {
 	return &SQLRepository{
 		Account:              NewAccountRepository(),
 		Reservation:          NewReservationRepository(),
+		Transfer:             NewTransferer(),
 		SQLTransactionHelper: NewTransactionHelper(db),
 	}
 }
