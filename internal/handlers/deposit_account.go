@@ -10,20 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type DepositAccountHandler struct {
-	Logger  *logrus.Logger
-	Service *services.Service
-}
-
-func NewDepositAccountHandler(Logger *logrus.Logger, serv *services.Service) *DepositAccountHandler {
-	return &DepositAccountHandler{
-		Logger:  Logger,
-		Service: serv,
-	}
-}
-
 // TODO: trunc all digits after dot except two first
-func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Request) {
+func (handler *Handler) deposit(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Deposit account request received")
 
 	var data dtos.DepositAccountDto
@@ -34,7 +22,7 @@ func (handler *DepositAccountHandler) Handle(rw http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err := handler.Service.Account.Deposit(data)
+	err := handler.services.Account.Deposit(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

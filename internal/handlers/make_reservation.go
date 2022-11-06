@@ -6,23 +6,9 @@ import (
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/errors"
-	"github.com/adepte-myao/avito_internship/internal/services"
-	"github.com/sirupsen/logrus"
 )
 
-type MakeReservationHandler struct {
-	Logger  *logrus.Logger
-	Service *services.Service
-}
-
-func NewMakeReservationHandler(Logger *logrus.Logger, serv *services.Service) *MakeReservationHandler {
-	return &MakeReservationHandler{
-		Logger:  Logger,
-		Service: serv,
-	}
-}
-
-func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Request) {
+func (handler *Handler) makeReservation(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Make reservation request received")
 
 	var data dtos.ReservationDto
@@ -33,7 +19,7 @@ func (handler *MakeReservationHandler) Handle(rw http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := handler.Service.Reservation.MakeReservation(data)
+	err := handler.services.Reservation.MakeReservation(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

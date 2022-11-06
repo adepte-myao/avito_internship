@@ -85,9 +85,3 @@ func (s *Server) congfigureServer() {
 	s.ReadTimeout = 5 * time.Second
 	s.WriteTimeout = 5 * time.Second
 }
-
-func (s *Server) Ping(rw http.ResponseWriter, r *http.Request) {
-	s.logger.Info("Ping request received")
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Hello from balancer!"))
-}
