@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/adepte-myao/avito_internship/internal/handlers"
-	"github.com/adepte-myao/avito_internship/internal/models"
 	mock_services "github.com/adepte-myao/avito_internship/internal/services/mock_service"
 	"github.com/golang/mock/gomock"
 	"github.com/shopspring/decimal"
@@ -16,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetBalanceHandler(t *testing.T) {
-	type accountServBehavior func(accServ *mock_services.MockAccount, accId int32)
+func TestInternalTransferHandler(t *testing.T) {
+	type accountServBehavior func(accServ *mock_services.MockAccount, senderId int32, receiverId int32, value decimal.Decimal)
 
 	testCases := []struct {
 		name                 string
@@ -27,35 +26,26 @@ func TestGetBalanceHandler(t *testing.T) {
 		expectedResponseBody string
 	}{
 		{
-			name:      "Success without fractional part",
-			inputBody: `{"accountId":1}`,
-			accountServBehavior: func(accServ *mock_services.MockAccount, accId int32) {
-				accServ.EXPECT().GetBalance(accId).Return(models.Account{ID: 1, Balance: decimal.NewFromInt(100)}, nil)
+			name:      "Success",
+			inputBody: `{"senderId":1,"receiverId":2,"value":"100.01"}`,
+			accountServBehavior: func(accServ *mock_services.MockAccount, senderId int32, receiverId int32, value decimal.Decimal) {
+				accServ.EXPECT().InternalTransfer(senderId, receiverId, value).Return(nil)
 			},
-			expextedStatusCode:   200,
-			expectedResponseBody: "{\"accountId\":1,\"balance\":\"100\"}\n",
-		},
-		{
-			name:      "Success with fractional part",
-			inputBody: `{"accountId":1}`,
-			accountServBehavior: func(accServ *mock_services.MockAccount, accId int32) {
-				accServ.EXPECT().GetBalance(accId).Return(models.Account{ID: 1, Balance: decimal.NewFromFloat(100.01)}, nil)
-			},
-			expextedStatusCode:   200,
-			expectedResponseBody: "{\"accountId\":1,\"balance\":\"100.01\"}\n",
+			expextedStatusCode:   204,
+			expectedResponseBody: "",
 		},
 		{
 			name:                 "Invalid request body",
-			inputBody:            `{"accountId":"1"}`,
-			accountServBehavior:  func(accServ *mock_services.MockAccount, accId int32) {},
+			inputBody:            `{"senderId":"1","receiverId":2,"value":"100.01"}`,
+			accountServBehavior:  func(accServ *mock_services.MockAccount, senderId int32, receiverId int32, value decimal.Decimal) {},
 			expextedStatusCode:   400,
 			expectedResponseBody: "{\"reason\":\"invalid request body\"}\n",
 		},
 		{
 			name:      "Error from reservation service is not changed",
-			inputBody: `{"accountId":1}`,
-			accountServBehavior: func(accServ *mock_services.MockAccount, accId int32) {
-				accServ.EXPECT().GetBalance(accId).Return(models.Account{}, errors.New("bla-bla-bla"))
+			inputBody: `{"senderId":1,"receiverId":2,"value":"100.01"}`,
+			accountServBehavior: func(accServ *mock_services.MockAccount, senderId int32, receiverId int32, value decimal.Decimal) {
+				accServ.EXPECT().InternalTransfer(senderId, receiverId, value).Return(errors.New("bla-bla-bla"))
 			},
 			expextedStatusCode:   400,
 			expectedResponseBody: "{\"reason\":\"bla-bla-bla\"}\n",
@@ -67,7 +57,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			accServ := mock_services.NewMockAccount(ctrl)
-			testCase.accountServBehavior(accServ, int32(1))
+			testCase.accountServBehavior(accServ, int32(1), int32(2), decimal.NewFromFloat(100.01))
 
 			logger := logrus.New()
 			logger.Level = logrus.FatalLevel
@@ -78,7 +68,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			}
 			router := handler.InitRoutes()
 
-			req, err := http.NewRequest("GET", "/balance/get",
+			req, err := http.NewRequest("POST", "/balance/transfer",
 				bytes.NewBufferString(testCase.inputBody))
 			assert.NoError(t, err)
 			rw := httptest.NewRecorder()

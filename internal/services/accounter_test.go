@@ -257,3 +257,92 @@ func TestAccounter_Withdraw(t *testing.T) {
 		})
 	}
 }
+
+func TestAccounter_InternalTransfer(t *testing.T) {
+	type accountRepoBehavior func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal)
+	type txHelperBehavior func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx)
+
+	testCases := []struct {
+		name                string
+		senderId            int32
+		recId               int32
+		value               decimal.Decimal
+		accountRepoBehavior accountRepoBehavior
+		txHelperBehavior    txHelperBehavior
+		expectedError       error
+	}{
+		{
+			name:     "Success",
+			senderId: 1,
+			recId:    2,
+			value:    decimal.NewFromInt(100),
+			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
+					models.Account{ID: senderId, Balance: decimal.NewFromInt(100)}, nil,
+				)
+				accountRepo.EXPECT().DecreaseBalance(tx, senderId, value).Return(nil)
+				accountRepo.EXPECT().IncreaseBalance(tx, recId, value).Return(nil)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().CommitTransaction(tx).Return()
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expectedError: nil,
+		},
+		{
+			name:     "Sender account does not exist",
+			senderId: 1,
+			recId:    2,
+			value:    decimal.NewFromInt(100),
+			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
+					models.Account{}, errors.New("not nil"),
+				)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expectedError: errors.New("sender account does not exist"),
+		},
+		{
+			name:     "Sender account does not have enough money",
+			senderId: 1,
+			recId:    2,
+			value:    decimal.NewFromInt(100),
+			accountRepoBehavior: func(accountRepo *mock_storage.MockAccount, tx *sql.Tx, senderId int32, recId int32, value decimal.Decimal) {
+				accountRepo.EXPECT().GetAccount(tx, senderId).Return(
+					models.Account{ID: senderId, Balance: decimal.NewFromInt(99)}, nil,
+				)
+			},
+			txHelperBehavior: func(txHelper *mock_storage.MockSQLTransactionHelper, tx *sql.Tx) {
+				txHelper.EXPECT().BeginTransaction().Return(&sql.Tx{}, nil)
+				txHelper.EXPECT().RollbackTransaction(tx).Return()
+			},
+			expectedError: errors.New("not enough money"),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			tx := &sql.Tx{}
+
+			accRepo := mock_storage.NewMockAccount(ctrl)
+			testCase.accountRepoBehavior(accRepo, tx, testCase.senderId, testCase.recId, testCase.value)
+
+			txHelper := mock_storage.NewMockSQLTransactionHelper(ctrl)
+			testCase.txHelperBehavior(txHelper, tx)
+
+			accounter := services.Accounter{
+				Account:  accRepo,
+				TxHelper: txHelper,
+			}
+
+			err := accounter.InternalTransfer(testCase.senderId, testCase.recId, testCase.value)
+			assert.EqualValues(t, testCase.expectedError, err)
+		})
+	}
+}

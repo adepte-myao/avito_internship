@@ -13,6 +13,7 @@ type Account interface {
 	GetBalance(accountId int32) (models.Account, error)
 	Deposit(accountId int32, value decimal.Decimal) error
 	Withdraw(accountId int32, value decimal.Decimal) error
+	InternalTransfer(senderId int32, recId int32, value decimal.Decimal) error
 }
 
 type Reservation interface {

@@ -65,6 +65,20 @@ func (mr *MockAccountMockRecorder) GetBalance(accountId interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockAccount)(nil).GetBalance), accountId)
 }
 
+// InternalTransfer mocks base method.
+func (m *MockAccount) InternalTransfer(senderId, recId int32, value decimal.Decimal) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InternalTransfer", senderId, recId, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InternalTransfer indicates an expected call of InternalTransfer.
+func (mr *MockAccountMockRecorder) InternalTransfer(senderId, recId, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InternalTransfer", reflect.TypeOf((*MockAccount)(nil).InternalTransfer), senderId, recId, value)
+}
+
 // Withdraw mocks base method.
 func (m *MockAccount) Withdraw(accountId int32, value decimal.Decimal) error {
 	m.ctrl.T.Helper()

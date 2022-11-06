@@ -34,9 +34,10 @@ func (h *Handler) InitRoutes() *mux.Router {
 	router.HandleFunc("/ping", h.ping).Methods("GET")
 
 	balance := router.PathPrefix("/balance").Subrouter()
-	balance.HandleFunc("/", h.getBalance).Methods("GET")
+	balance.HandleFunc("/get", h.getBalance).Methods("GET")
 	balance.HandleFunc("/deposit", h.deposit).Methods("POST")
 	balance.HandleFunc("/withdraw", h.withdraw).Methods("POST")
+	balance.HandleFunc("/transfer", h.internalTransfer).Methods("POST")
 
 	reservation := router.PathPrefix("/reservation").Subrouter()
 	reservation.HandleFunc("/make", h.makeReservation).Methods("POST")
