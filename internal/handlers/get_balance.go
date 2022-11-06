@@ -19,7 +19,7 @@ func (handler *Handler) getBalance(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := handler.services.Account.GetBalance(data)
+	account, err := handler.services.Account.GetBalance(data.AccountId)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

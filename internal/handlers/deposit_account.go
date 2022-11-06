@@ -6,8 +6,6 @@ import (
 
 	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/errors"
-	"github.com/adepte-myao/avito_internship/internal/services"
-	"github.com/sirupsen/logrus"
 )
 
 // TODO: trunc all digits after dot except two first
@@ -22,7 +20,7 @@ func (handler *Handler) deposit(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := handler.services.Account.Deposit(data)
+	err := handler.services.Account.Deposit(data.AccountId, data.Value)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

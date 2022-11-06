@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 
-	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/models"
 	"github.com/adepte-myao/avito_internship/internal/storage"
+	"github.com/shopspring/decimal"
 )
 
 type Accounter struct {
@@ -20,14 +20,14 @@ func NewAccounter(repo *storage.SQLRepository) *Accounter {
 	}
 }
 
-func (serv *Accounter) GetBalance(dto dtos.GetBalanceDto) (models.Account, error) {
+func (serv *Accounter) GetBalance(accountId int32) (models.Account, error) {
 	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return models.Account{}, err
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
-	Account, err := serv.Account.GetAccount(tx, dto.AccountId)
+	Account, err := serv.Account.GetAccount(tx, accountId)
 	if err != nil {
 		return models.Account{}, errors.New("Account with given ID does not exist")
 	}
@@ -37,23 +37,23 @@ func (serv *Accounter) GetBalance(dto dtos.GetBalanceDto) (models.Account, error
 	return Account, nil
 }
 
-func (serv *Accounter) Deposit(depDto dtos.DepositAccountDto) error {
+func (serv *Accounter) Deposit(accountId int32, value decimal.Decimal) error {
 	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return err
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
-	_, err = serv.Account.GetAccount(tx, depDto.AccountId)
+	_, err = serv.Account.GetAccount(tx, accountId)
 	if err != nil {
 		// TODO: can't be other errors except no Account?
-		err := serv.Account.CreateAccount(tx, depDto.AccountId)
+		err := serv.Account.CreateAccount(tx, accountId)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = serv.Account.IncreaseBalance(tx, depDto.AccountId, depDto.Value)
+	err = serv.Account.IncreaseBalance(tx, accountId, value)
 	if err != nil {
 		return err
 	}
@@ -63,23 +63,23 @@ func (serv *Accounter) Deposit(depDto dtos.DepositAccountDto) error {
 	return nil
 }
 
-func (serv *Accounter) Withdraw(wdDto dtos.WithdrawAccountDto) error {
+func (serv *Accounter) Withdraw(accountId int32, value decimal.Decimal) error {
 	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return err
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
-	Account, err := serv.Account.GetAccount(tx, wdDto.AccountId)
+	Account, err := serv.Account.GetAccount(tx, accountId)
 	if err != nil {
-		return errors.New("Account does not exist")
+		return errors.New("account does not exist")
 	}
 
-	if Account.Balance.LessThan(wdDto.Value) {
+	if Account.Balance.LessThan(value) {
 		return errors.New("not enough money")
 	}
 
-	err = serv.Account.DecreaseBalance(tx, wdDto.AccountId, wdDto.Value)
+	err = serv.Account.DecreaseBalance(tx, accountId, value)
 	if err != nil {
 		return err
 	}
