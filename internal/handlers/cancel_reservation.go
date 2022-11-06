@@ -19,7 +19,7 @@ func (handler *Handler) cancelReservation(rw http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err := handler.services.Reservation.CancelReservation(data)
+	err := handler.Reservation.CancelReservation(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

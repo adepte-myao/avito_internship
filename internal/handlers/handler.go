@@ -9,14 +9,16 @@ import (
 )
 
 type Handler struct {
-	services *services.Service
-	Logger   *logrus.Logger
+	Account     services.Account
+	Reservation services.Reservation
+	Logger      *logrus.Logger
 }
 
 func NewHandler(services *services.Service, logger *logrus.Logger) *Handler {
 	return &Handler{
-		services: services,
-		Logger:   logger,
+		Account:     services.Account,
+		Reservation: services.Reservation,
+		Logger:      logger,
 	}
 }
 

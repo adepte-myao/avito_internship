@@ -20,7 +20,7 @@ func (handler *Handler) deposit(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := handler.services.Account.Deposit(data.AccountId, data.Value)
+	err := handler.Account.Deposit(data.AccountId, data.Value)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

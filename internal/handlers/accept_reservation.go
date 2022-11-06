@@ -19,7 +19,7 @@ func (handler *Handler) acceptReservation(rw http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err := handler.services.Reservation.AcceptReservation(data)
+	err := handler.Reservation.AcceptReservation(data)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)
