@@ -65,12 +65,16 @@ func (repo *TransferRepository) GetAccountStatements(tx *sql.Tx, dto dtos.GetAcc
 	rows, err := tx.Query(
 		`SELECT * 
 		FROM (SELECT record_time, 'deposit'::transfer_type as "transfer_type", total_cost as "amount",
-			concat('service ID: ', service_id, ', order ID: ', order_id) as "description"
-			FROM reserves_history WHERE account_id = $1 AND state = 'cancelled'::reserve_state
+			concat('service: ', s.name, ', order ID: ', order_id) as "description"
+			FROM reserves_history 
+			JOIN services s on reserves_history.service_id = s.id
+			WHERE account_id = $1 AND state = 'cancelled'::reserve_state
 		UNION ALL
 		SELECT record_time, 'withdraw'::transfer_type as "transfer_type", total_cost as "amount",
-       		concat('service ID: ', service_id, ', order ID: ', order_id) as "description"
-    		FROM reserves_history WHERE account_id = $1 AND state = 'reserved'::reserve_state
+       		concat('service: ', s.name, ', order ID: ', order_id) as "description"
+    		FROM reserves_history 
+			JOIN services s on reserves_history.service_id = s.id
+			WHERE account_id = $1 AND state = 'reserved'::reserve_state
 		UNION ALL
 		SELECT record_time, transfer_type, amount, 'external transfer' as "description"
 			FROM external_transfers_history
@@ -99,14 +103,11 @@ func (repo *TransferRepository) GetAccountStatements(tx *sql.Tx, dto dtos.GetAcc
 	statements := make([]models.StatementElem, 0)
 	for rows.Next() {
 		statement := models.StatementElem{}
-		var ttype string
 		var balance string
-		err = rows.Scan(&statement.RecordTime, &ttype, &balance, &statement.Description)
+		err = rows.Scan(&statement.RecordTime, &statement.TransferType, &balance, &statement.Description)
 		if err != nil {
 			return nil, err
 		}
-
-		statement.TransferType.FromString(ttype)
 
 		// balance format: "123.45 P"
 		regBalance := regexp.MustCompile(`[^0-9,]`)

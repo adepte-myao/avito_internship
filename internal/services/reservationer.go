@@ -139,3 +139,20 @@ func (serv *Reservationer) CancelReservation(resDto dtos.ReservationDto) error {
 
 	return nil
 }
+
+func (serv *Reservationer) GetAccountantReport() ([]models.AccountantReportElem, error) {
+	tx, err := serv.TxHelper.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	defer serv.TxHelper.RollbackTransaction(tx)
+
+	report, err := serv.Reservation.GetAccountantReport(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	serv.TxHelper.CommitTransaction(tx)
+
+	return report, nil
+}

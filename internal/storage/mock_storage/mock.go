@@ -131,6 +131,21 @@ func (mr *MockReservationMockRecorder) CreateReservation(tx, reservation interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReservation", reflect.TypeOf((*MockReservation)(nil).CreateReservation), tx, reservation)
 }
 
+// GetAccountantReport mocks base method.
+func (m *MockReservation) GetAccountantReport(tx *sql.Tx) ([]models.AccountantReportElem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAccountantReport", tx)
+	ret0, _ := ret[0].([]models.AccountantReportElem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAccountantReport indicates an expected call of GetAccountantReport.
+func (mr *MockReservationMockRecorder) GetAccountantReport(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountantReport", reflect.TypeOf((*MockReservation)(nil).GetAccountantReport), tx)
+}
+
 // GetReservation mocks base method.
 func (m *MockReservation) GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error) {
 	m.ctrl.T.Helper()

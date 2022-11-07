@@ -29,7 +29,12 @@ type Reservation struct {
 
 type StatementElem struct {
 	RecordTime   time.Time       `json:"recordTime"`
-	TransferType TransferType    `json:"transferType"`
+	TransferType string          `json:"transferType"`
 	Amount       decimal.Decimal `json:"amount"`
 	Description  string          `json:"description"`
+}
+
+type AccountantReportElem struct {
+	ServiceName   string          `json:"serviceName"`
+	TotalReceived decimal.Decimal `json:"totalReceived"`
 }

@@ -20,6 +20,7 @@ type Account interface {
 type Reservation interface {
 	CreateReservation(tx *sql.Tx, reservation models.Reservation) error
 	GetReservation(tx *sql.Tx, reservationDto dtos.ReservationDto, state models.ReserveState) (models.Reservation, error)
+	GetAccountantReport(tx *sql.Tx) ([]models.AccountantReportElem, error)
 }
 
 type Transfer interface {

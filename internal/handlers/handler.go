@@ -45,5 +45,7 @@ func (h *Handler) InitRoutes() *mux.Router {
 	reservation.HandleFunc("/accept", h.acceptReservation).Methods("POST")
 	reservation.HandleFunc("/cancel", h.cancelReservation).Methods("POST")
 
+	router.HandleFunc("/accountant-report", h.getAccountantReport).Methods("GET")
+
 	return router
 }

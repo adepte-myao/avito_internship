@@ -21,6 +21,7 @@ type Reservation interface {
 	MakeReservation(resDto dtos.ReservationDto) error
 	AcceptReservation(resDto dtos.ReservationDto) error
 	CancelReservation(resDto dtos.ReservationDto) error
+	GetAccountantReport() ([]models.AccountantReportElem, error)
 }
 
 type Service struct {

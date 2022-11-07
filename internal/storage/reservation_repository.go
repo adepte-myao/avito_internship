@@ -70,3 +70,45 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 
 	return reservation, err
 }
+
+func (repo *ReservationRepository) GetAccountantReport(tx *sql.Tx) ([]models.AccountantReportElem, error) {
+	rows, err := tx.Query(
+		`SELECT s.name, total
+		FROM (SELECT service_id, sum(total_cost) AS "total"
+			  FROM reserves_history
+			  WHERE state = 'accepted'::reserve_state
+			  GROUP BY service_id) AS t
+		JOIN services s ON service_id = s.id`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	report := make([]models.AccountantReportElem, 0)
+	for rows.Next() {
+		elem := models.AccountantReportElem{}
+		var total string
+		err = rows.Scan(&elem.ServiceName, &total)
+		if err != nil {
+			return nil, err
+		}
+
+		// total format: "123.45 P"
+		regTotal := regexp.MustCompile(`[^0-9,]`)
+		total = regTotal.ReplaceAllString(total, "")
+		total = strings.Replace(total, ",", ".", 1)
+		elem.TotalReceived, err = decimal.NewFromString(total)
+		if err != nil {
+			return nil, err
+		}
+
+		report = append(report, elem)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return report, nil
+}
