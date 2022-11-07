@@ -3,9 +3,11 @@ package handlers
 import (
 	"net/http"
 
+	_ "github.com/adepte-myao/avito_internship/docs"
 	"github.com/adepte-myao/avito_internship/internal/services"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Handler struct {
@@ -32,6 +34,7 @@ func (h *Handler) InitRoutes() *mux.Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/ping", h.ping).Methods("GET")
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	balance := router.PathPrefix("/balance").Subrouter()
 	balance.HandleFunc("/get", h.getBalance).Methods("GET")

@@ -8,9 +8,17 @@ import (
 	"github.com/adepte-myao/avito_internship/internal/errors"
 )
 
-// TODO: trunc all digits after dot except two first
-
+// @Summary Withdraw
+// @Tags balance
+// @Description withdraw account if account exists and has enough money
+// @Accept json
+// @Produce json
+// @Param input body dtos.WithdrawAccountDto true "account id and value to withdraw"
+// @Success 204 {integer} integer
+// @Failure 400 {object} errors.ResponseError
+// @Router /balance/withdraw [post]
 func (handler *Handler) withdraw(rw http.ResponseWriter, r *http.Request) {
+	// TODO: trunc all digits after dot except two first
 	handler.Logger.Info("Withdraw account request received")
 
 	var data dtos.WithdrawAccountDto

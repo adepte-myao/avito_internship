@@ -8,6 +8,15 @@ import (
 	"github.com/adepte-myao/avito_internship/internal/errors"
 )
 
+// @Summary GetStatement
+// @Tags balance
+// @Description collects information about all transfers related to given account
+// @Accept json
+// @Produce json
+// @Param input body dtos.GetAccountStatementDto true "account id"
+// @Success 200 {object} []models.StatementElem
+// @Failure 400 {object} errors.ResponseError
+// @Router /balance/statement [get]
 func (handler *Handler) getStatement(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Get account statement request received")
 

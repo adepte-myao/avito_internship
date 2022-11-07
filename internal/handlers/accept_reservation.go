@@ -8,6 +8,15 @@ import (
 	"github.com/adepte-myao/avito_internship/internal/errors"
 )
 
+// @Summary AcceptReservation
+// @Tags reservation
+// @Description accept reserved reservation
+// @Accept json
+// @Produce json
+// @Param input body dtos.ReservationDto true "reservation info"
+// @Success 204 {integer} integer
+// @Failure 400 {object} errors.ResponseError
+// @Router /reservation/accept [post]
 func (handler *Handler) acceptReservation(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Accept reservation request received")
 

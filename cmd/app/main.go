@@ -13,6 +13,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// @title Balance microservice
+// @version 1.0
+// @description Balance service for avito internship
+
 func main() {
 	f, err := os.Open("config/config.yaml")
 	if err != nil {

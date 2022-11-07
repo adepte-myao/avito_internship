@@ -8,6 +8,15 @@ import (
 	"github.com/adepte-myao/avito_internship/internal/errors"
 )
 
+// @Summary GetBalance
+// @Tags balance
+// @Description return balance of the account with given id
+// @Accept json
+// @Produce json
+// @Param input body dtos.GetBalanceDto true "account id"
+// @Success 200 {object} models.Account
+// @Failure 400 {object} errors.ResponseError
+// @Router /balance/get [get]
 func (handler *Handler) getBalance(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Get balance request received")
 
