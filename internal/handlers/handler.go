@@ -38,6 +38,7 @@ func (h *Handler) InitRoutes() *mux.Router {
 	balance.HandleFunc("/deposit", h.deposit).Methods("POST")
 	balance.HandleFunc("/withdraw", h.withdraw).Methods("POST")
 	balance.HandleFunc("/transfer", h.internalTransfer).Methods("POST")
+	balance.HandleFunc("/statement", h.getStatement).Methods("GET")
 
 	reservation := router.PathPrefix("/reservation").Subrouter()
 	reservation.HandleFunc("/make", h.makeReservation).Methods("POST")

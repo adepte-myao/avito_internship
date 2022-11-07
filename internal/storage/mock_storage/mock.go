@@ -169,6 +169,21 @@ func (m *MockTransfer) EXPECT() *MockTransferMockRecorder {
 	return m.recorder
 }
 
+// GetAccountStatements mocks base method.
+func (m *MockTransfer) GetAccountStatements(tx *sql.Tx, dto dtos.GetAccountStatementDto) ([]models.StatementElem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAccountStatements", tx, dto)
+	ret0, _ := ret[0].([]models.StatementElem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAccountStatements indicates an expected call of GetAccountStatements.
+func (mr *MockTransferMockRecorder) GetAccountStatements(tx, dto interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountStatements", reflect.TypeOf((*MockTransfer)(nil).GetAccountStatements), tx, dto)
+}
+
 // RecordExternalTransfer mocks base method.
 func (m *MockTransfer) RecordExternalTransfer(tx *sql.Tx, accId int32, ttype models.TransferType, amount decimal.Decimal) error {
 	m.ctrl.T.Helper()

@@ -15,7 +15,11 @@ type DepositAccountDto struct {
 }
 
 type GetAccountStatementDto struct {
-	AccountId int32 `json:"accountId"`
+	AccountId          int32  `json:"accountId"`
+	Page               int    `json:"page"`
+	PageSize           int    `json:"pageSize"`
+	FirstSortCriteria  string `json:"firstSortCriteria"`
+	SecondSortCriteria string `json:"secondSortCriteria"`
 }
 
 type GetBalanceDto struct {

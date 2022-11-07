@@ -27,12 +27,9 @@ type Reservation struct {
 	BalanceAfter decimal.Decimal
 }
 
-type CustomTransfer struct {
-	ID             int64
-	AccountId      int32
-	OtherAccountId int32
-	Type           TransferType
-	Amount         decimal.Decimal
-	RecordTime     time.Time
-	BalanceAfter   decimal.Decimal
+type StatementElem struct {
+	RecordTime   time.Time       `json:"recordTime"`
+	TransferType TransferType    `json:"transferType"`
+	Amount       decimal.Decimal `json:"amount"`
+	Description  string          `json:"description"`
 }

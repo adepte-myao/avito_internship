@@ -65,6 +65,21 @@ func (mr *MockAccountMockRecorder) GetBalance(accountId interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockAccount)(nil).GetBalance), accountId)
 }
 
+// GetStatement mocks base method.
+func (m *MockAccount) GetStatement(dto dtos.GetAccountStatementDto) ([]models.StatementElem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatement", dto)
+	ret0, _ := ret[0].([]models.StatementElem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStatement indicates an expected call of GetStatement.
+func (mr *MockAccountMockRecorder) GetStatement(dto interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatement", reflect.TypeOf((*MockAccount)(nil).GetStatement), dto)
+}
+
 // InternalTransfer mocks base method.
 func (m *MockAccount) InternalTransfer(senderId, recId int32, value decimal.Decimal) error {
 	m.ctrl.T.Helper()

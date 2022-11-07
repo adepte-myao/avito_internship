@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 
+	"github.com/adepte-myao/avito_internship/internal/dtos"
 	"github.com/adepte-myao/avito_internship/internal/models"
 	"github.com/adepte-myao/avito_internship/internal/storage"
 	"github.com/shopspring/decimal"
@@ -140,4 +141,21 @@ func (serv *Accounter) InternalTransfer(senderId int32, recId int32, value decim
 	serv.TxHelper.CommitTransaction(tx)
 
 	return nil
+}
+
+func (serv *Accounter) GetStatement(dto dtos.GetAccountStatementDto) ([]models.StatementElem, error) {
+	tx, err := serv.TxHelper.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	defer serv.TxHelper.RollbackTransaction(tx)
+
+	statements, err := serv.Transfer.GetAccountStatements(tx, dto)
+	if err != nil {
+		return nil, err
+	}
+
+	serv.TxHelper.CommitTransaction(tx)
+
+	return statements, nil
 }

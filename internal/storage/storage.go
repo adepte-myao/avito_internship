@@ -25,6 +25,7 @@ type Reservation interface {
 type Transfer interface {
 	RecordExternalTransfer(tx *sql.Tx, accId int32, ttype models.TransferType, amount decimal.Decimal) error
 	RecordInternalTransfer(tx *sql.Tx, senderId int32, recId int32, amount decimal.Decimal) error
+	GetAccountStatements(tx *sql.Tx, dto dtos.GetAccountStatementDto) ([]models.StatementElem, error)
 }
 
 type SQLTransactionHelper interface {
