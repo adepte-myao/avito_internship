@@ -3,6 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/adepte-myao/avito_internship/internal/dtos"
+	"github.com/adepte-myao/avito_internship/internal/errors"
 )
 
 // @Summary GetAccountantReport
@@ -15,7 +18,15 @@ import (
 func (handler *Handler) getAccountantReport(rw http.ResponseWriter, r *http.Request) {
 	handler.Logger.Info("Get accountant report request received")
 
-	report, err := handler.Reservation.GetAccountantReport()
+	var data dtos.MakeAccountantReportDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		handler.Logger.Error("cannot decode request body: ", err.Error())
+		rw.WriteHeader(http.StatusBadRequest)
+		writeErrorToResponse(errors.NewErrorInvalidRequestBody(""), rw)
+		return
+	}
+
+	report, err := handler.Reservation.GetAccountantReport(data.Month, data.Year)
 	if err != nil {
 		handler.Logger.Error(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)

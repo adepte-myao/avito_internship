@@ -160,18 +160,18 @@ func (mr *MockReservationMockRecorder) CancelReservation(resDto interface{}) *go
 }
 
 // GetAccountantReport mocks base method.
-func (m *MockReservation) GetAccountantReport() ([]models.AccountantReportElem, error) {
+func (m *MockReservation) GetAccountantReport(month, year int) ([]models.AccountantReportElem, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccountantReport")
+	ret := m.ctrl.Call(m, "GetAccountantReport", month, year)
 	ret0, _ := ret[0].([]models.AccountantReportElem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAccountantReport indicates an expected call of GetAccountantReport.
-func (mr *MockReservationMockRecorder) GetAccountantReport() *gomock.Call {
+func (mr *MockReservationMockRecorder) GetAccountantReport(month, year interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountantReport", reflect.TypeOf((*MockReservation)(nil).GetAccountantReport))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountantReport", reflect.TypeOf((*MockReservation)(nil).GetAccountantReport), month, year)
 }
 
 // MakeReservation mocks base method.

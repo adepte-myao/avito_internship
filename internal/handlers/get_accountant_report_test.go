@@ -36,7 +36,7 @@ func TestGetAccountantReportHandler(t *testing.T) {
 					TotalReceived: decimal.NewFromFloat(100.01),
 				}
 				report = append(report, elem)
-				resServ.EXPECT().GetAccountantReport().Return(report, nil)
+				resServ.EXPECT().GetAccountantReport(11, 2022).Return(report, nil)
 			},
 			expextedStatusCode:   200,
 			expectedResponseBody: "[{\"serviceName\":\"bla-bla\",\"totalReceived\":\"100.01\"}]\n",
@@ -45,7 +45,7 @@ func TestGetAccountantReportHandler(t *testing.T) {
 			name:      "Error from reservation service is not changed",
 			inputBody: `{"accountId":1}`,
 			reservationServBehavior: func(resServ *mock_services.MockReservation) {
-				resServ.EXPECT().GetAccountantReport().Return(nil, errors.New("bla-bla-bla"))
+				resServ.EXPECT().GetAccountantReport(11, 2022).Return(nil, errors.New("bla-bla-bla"))
 			},
 			expextedStatusCode:   400,
 			expectedResponseBody: "{\"reason\":\"bla-bla-bla\"}\n",
@@ -63,7 +63,7 @@ func TestGetAccountantReportHandler(t *testing.T) {
 			logger.Level = logrus.FatalLevel
 
 			handler := handlers.Handler{
-				Logger:  logger,
+				Logger:      logger,
 				Reservation: reServ,
 			}
 			router := handler.InitRoutes()

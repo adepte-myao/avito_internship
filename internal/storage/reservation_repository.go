@@ -71,14 +71,17 @@ func (repo *ReservationRepository) GetReservation(tx *sql.Tx, reservationDto dto
 	return reservation, err
 }
 
-func (repo *ReservationRepository) GetAccountantReport(tx *sql.Tx) ([]models.AccountantReportElem, error) {
+func (repo *ReservationRepository) GetAccountantReport(tx *sql.Tx, month int, year int) ([]models.AccountantReportElem, error) {
 	rows, err := tx.Query(
 		`SELECT s.name, total
 		FROM (SELECT service_id, sum(total_cost) AS "total"
 			  FROM reserves_history
-			  WHERE state = 'accepted'::reserve_state
+			  WHERE state = 'accepted'::reserve_state AND
+			        date_part('month', record_time) = $1 AND
+			        date_part('year', record_time) = $2
 			  GROUP BY service_id) AS t
-		JOIN services s ON service_id = s.id`)
+		JOIN services s ON service_id = s.id`,
+		month, year)
 
 	if err != nil {
 		return nil, err

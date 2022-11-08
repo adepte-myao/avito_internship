@@ -140,14 +140,18 @@ func (serv *Reservationer) CancelReservation(resDto dtos.ReservationDto) error {
 	return nil
 }
 
-func (serv *Reservationer) GetAccountantReport() ([]models.AccountantReportElem, error) {
+func (serv *Reservationer) GetAccountantReport(month int, year int) ([]models.AccountantReportElem, error) {
 	tx, err := serv.TxHelper.BeginTransaction()
 	if err != nil {
 		return nil, err
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
-	report, err := serv.Reservation.GetAccountantReport(tx)
+	if month < 1 || month > 12 {
+		return nil, errors.New("error month value")
+	}
+
+	report, err := serv.Reservation.GetAccountantReport(tx, month, year)
 	if err != nil {
 		return nil, err
 	}
