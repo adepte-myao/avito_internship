@@ -51,7 +51,7 @@ docker-compose up
 2.  Создать новую базу данных в том же контейнере с именем tests, и выполнить в ней 
     [скрипт](https://github.com/adepte-myao/avito_internship/blob/master/build/docker/db/init.sql).
 
-### Запуска тестирования
+### Запуск тестирования
 
 Запустить тестирование из корневого каталога можно 2-мя способами:
 ```ShellSession
