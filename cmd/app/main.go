@@ -47,8 +47,6 @@ func main() {
 
 	server := server.NewServer(&cfg, logger, router)
 
-	// Handlers registration
-
 	err = server.Start()
 	if err != nil {
 		logger.Error(err)
