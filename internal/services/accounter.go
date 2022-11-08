@@ -150,6 +150,7 @@ func (serv *Accounter) GetStatement(dto dtos.GetAccountStatementDto) ([]models.S
 	}
 	defer serv.TxHelper.RollbackTransaction(tx)
 
+	// TODO: if there are no statements, better to inform user about it
 	statements, err := serv.Transfer.GetAccountStatements(tx, dto)
 	if err != nil {
 		return nil, err
