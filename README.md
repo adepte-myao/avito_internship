@@ -4,11 +4,6 @@
 
 ## Запуск
 
-<<<<<<< HEAD
-По умолчанию сервис использует порт 9096. Номер порта используется в 2-х файлах:
-./docker-compose.yaml
-./config/config.yaml
-=======
 ### Используемый порт
 По умолчанию сервис использует порт 9096. Номер порта для сервиса указывается в 2-х файлах:
 - [./docker-compose.yaml](https://github.com/adepte-myao/avito_internship/blob/master/docker-compose.yaml)
@@ -159,4 +154,3 @@ Swagger-документация для сервиса.
 
 ### /accountant-report (get)
 
->>>>>>> f2e1631ba75fd6f1a865849441484da8b8a2de36
